@@ -37,9 +37,9 @@ STATIC_CFLAGS= $(CFLAGS)
 SHARED_CFLAGS= $(CFLAGS) -fPIC
 
 LDFLAGS= \
-	-Wl,-z,defs,-z,relro,-z,now \
 	-Wl,--as-needed \
-	-Wl,--no-undefined
+	-Wl,--no-undefined \
+	-Wl,--no-allow-shlib-undefined
 
 EXTRA_LDFLAGS=
 

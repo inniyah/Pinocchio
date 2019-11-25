@@ -17,9 +17,9 @@ CFLAGS= -O2 -g -Wall -std=c++17 \
 	$(shell $(PKGCONFIG) --cflags $(PACKAGES))
 
 LDFLAGS= \
-	-Wl,-z,defs,-z,relro,-z,now \
 	-Wl,--as-needed \
-	-Wl,--no-undefined
+	-Wl,--no-undefined \
+	-Wl,--no-allow-shlib-undefined
 
 LIBS= \
 	-lm -L../Pinocchio/ -lpinocchio -lfltk -lfltk_gl \
