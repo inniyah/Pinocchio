@@ -26,13 +26,9 @@
 #ifdef _WIN32
 #ifdef PINOCCHIO_EXPORTS
 #define PINOCCHIO_API __declspec(dllexport)
-//PINOCCHIO_EXPORTS
-#else
+#else //PINOCCHIO_EXPORTS
 #define PINOCCHIO_API __declspec(dllimport)
-//PINOCCHIO_EXPORTS
-#endif
-//_WIN32
-#else
+#endif //PINOCCHIO_EXPORTS
+#else //_WIN32
 #define PINOCCHIO_API
-//_WIN32
-#endif
+#endif //_WIN32
