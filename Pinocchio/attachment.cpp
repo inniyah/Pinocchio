@@ -35,16 +35,18 @@ class AttachmentPrivate
     virtual AttachmentPrivate *clone() const = 0;
 };
 
-bool vectorInCone(const Vector3 &v, const std::vector<Vector3> &ns)
-{
+Vector3 vertexNormal(const std::vector<Vector3> &ns) {
   int i;
   Vector3 avg;
-  for(i = 0; i < (int)ns.size(); ++i)
+  for(i = 0; i < (int)ns.size(); ++i) {
     avg += ns[i];
-
-  return v.normalize() * avg.normalize() > 0.5;
+  }
+  return avg.normalize();
 }
 
+bool vectorInCone(const Vector3 &v, const std::vector<Vector3> &ns) {
+    return v.normalize() * vertexNormal(ns) > 0.5;
+}
 
 class AttachmentPrivate1 : public AttachmentPrivate
 {
