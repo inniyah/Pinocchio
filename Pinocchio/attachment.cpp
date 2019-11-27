@@ -423,6 +423,8 @@ class AttachmentPrivate1 : public AttachmentPrivate
 
     Vector<double, -1> getWeights(int i) const { return weights[i]; }
 
+    const std::vector<Vector<double, -1> >& getAllWeights() const { return weights; }
+
     AttachmentPrivate *clone() const
     {
       AttachmentPrivate1 *out = new AttachmentPrivate1();
@@ -467,6 +469,15 @@ const std::vector<Vector3> &match, const VisibilityTester *tester,
 double initialHeatWeight)
 {
   a = new AttachmentPrivate1(mesh, skeleton, match, tester, initialHeatWeight);
+}
+
+const std::vector<Vector<double, -1> >& Attachment::getAllWeights()
+{
+  if (!a) {
+    a = new AttachmentPrivate1();
+  }
+  AttachmentPrivate1* aprivate = dynamic_cast<AttachmentPrivate1*>(a);
+  return aprivate->getAllWeights();
 }
 
 } // namespace Pinocchio
