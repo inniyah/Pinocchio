@@ -86,7 +86,7 @@ class PINOCCHIO_API Attachment {
     Mesh linearBlend(const Mesh &mesh, const std::vector<Transform<> > &transforms) const;
     Mesh dualQuaternion(const Mesh &mesh, const std::vector<Transform<> > &transforms) const;
     Vector<double, -1> getWeights(int i) const;
-    const std::vector<Vector<double, -1> >& getAllWeights();
+    std::vector<Vector<double, -1> >& getAllWeights();
   private:
     AttachmentPrivate *a;
 };

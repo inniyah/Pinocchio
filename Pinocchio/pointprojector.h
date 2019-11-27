@@ -29,6 +29,7 @@
 namespace Pinocchio {
 
 struct Vec3Object {
+  Vec3Object() {}
   Vec3Object(const Vector3 &inV) : v(inV) {}
 
   Rect3 boundingRect() const { return Rect3(v); }
@@ -39,7 +40,8 @@ struct Vec3Object {
 };
 
 struct Tri3Object {
-  Tri3Object(const Vector3 &inV1, const Vector3 &inV2, const Vector3 &inV3) : v1(inV1), v2(inV2), v3(inV3) {}
+  Tri3Object() {}
+  Tri3Object(const Vector3 &inV1, const Vector3 &inV2, const Vector3 &inV3, int idx = 0) : v1(inV1), v2(inV2), v3(inV3), triIdx(idx) {}
 
   Rect3 boundingRect() const { return Rect3(v1) | Rect3(v2) | Rect3(v3); }
   //for comparison only, no need to divide by 3
@@ -47,8 +49,8 @@ struct Tri3Object {
     return v1[i] + v2[i] + v3[i];
   }
   Vector3 project(const Vector3 &v) const { return projToTri(v, v1, v2, v3); }
-
   Vector3 v1, v2, v3;
+  int triIdx;
 };
 
 template<int Dim, class Obj>
@@ -75,7 +77,7 @@ class ObjectProjector
       initHelper(orders);
     }
 
-    Vec project(const Vec &from) const {
+    Vec projectObj(const Vec &from, Obj& closestObj) const {
       double minDistSq = 1e37;
       Vec closestSoFar;
 
@@ -93,8 +95,7 @@ class ObjectProjector
         int c1 = rnodes[cur].child1;
         int c2 = rnodes[cur].child2;
 
-        // Not a leaf
-        if (c1 >= 0) {
+        if (c1 >= 0) { // Not a leaf
           double l1 = rnodes[c1].rect.distSqTo(from);
           if (l1 < minDistSq) {
             todo[sz++] = std::make_pair(l1, c1);
@@ -126,12 +127,16 @@ class ObjectProjector
       }
 
       return closestSoFar;
+    }
+
+    Vec project(const Vec &from) const {
+        Obj test;
+        return projectObj(from, test);
     };
 
     struct RNode {
       Rec rect;
-      //if child1 is -1, child2 is the object index
-      int child1, child2;
+      int child1, child2; //if child1 is -1, child2 is the object index
     };
 
     const std::vector<RNode> &getRNodes() const { return rnodes; }

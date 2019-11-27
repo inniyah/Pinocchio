@@ -10,7 +10,7 @@ MINOR= 0
 SOURCES= \
 	attachment.cpp discretization.cpp indexer.cpp lsqSolver.cpp mesh.cpp \
 	graphutils.cpp intersector.cpp matrix.cpp skeleton.cpp embedding.cpp \
-	pinocchioApi.cpp refinement.cpp quatinterface.cpp
+	pinocchioApi.cpp PinnocchioCallback.cpp refinement.cpp quatinterface.cpp
 
 SHARED_OBJS = $(SOURCES:.cpp=.shared.o)
 STATIC_OBJS = $(SOURCES:.cpp=.static.o)

@@ -423,7 +423,7 @@ class AttachmentPrivate1 : public AttachmentPrivate
 
     Vector<double, -1> getWeights(int i) const { return weights[i]; }
 
-    const std::vector<Vector<double, -1> >& getAllWeights() const { return weights; }
+    std::vector<Vector<double, -1> >& getAllWeights() { return weights; }
 
     AttachmentPrivate *clone() const
     {
@@ -471,7 +471,7 @@ double initialHeatWeight)
   a = new AttachmentPrivate1(mesh, skeleton, match, tester, initialHeatWeight);
 }
 
-const std::vector<Vector<double, -1> >& Attachment::getAllWeights()
+std::vector<Vector<double, -1> >& Attachment::getAllWeights()
 {
   if (!a) {
     a = new AttachmentPrivate1();

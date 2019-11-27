@@ -32,9 +32,16 @@ struct PinocchioOutput {
   Attachment *attachment; //user responsible for deletion
 };
 
+Vector3 PINOCCHIO_API barycentricCoord(Vector3& projPos, Tri3Object& tri);
 //calls the other functions and does the whole rigging process
 //see the implementation of this function to find out how to use the individual functions
-PinocchioOutput PINOCCHIO_API autorig(const Skeleton &given, const Mesh &m);
+PinocchioOutput PINOCCHIO_API autorig(const Skeleton &given, const Mesh &m, bool computeSkinWeights = true);
+
+// use voxel mesh for auto rigging, then transfer the attachment weight to original mesh
+PinocchioOutput PINOCCHIO_API autorigVoxelTransfer(const Skeleton &given, Mesh &voxelMesh, Mesh& origMesh, bool computeSkinWeights = true); 
+
+// use voxel mesh for auto rigging, then transfer the attachment weight to original mesh
+PinocchioOutput PINOCCHIO_API autoRigSkinWeightOnly(const Skeleton &given, Mesh &voxelMesh, Mesh& origMesh, std::vector<Vector3>& inputSkeleton ); 
 
 //============================================individual steps=====================================
 
