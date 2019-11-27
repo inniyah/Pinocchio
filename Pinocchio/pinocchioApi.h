@@ -29,8 +29,7 @@ struct PinocchioOutput {
   PinocchioOutput() : attachment(NULL) {}
 
   std::vector<Vector3> embedding;
-  //user responsible for deletion
-  Attachment *attachment;
+  Attachment *attachment; //user responsible for deletion
 };
 
 //calls the other functions and does the whole rigging process

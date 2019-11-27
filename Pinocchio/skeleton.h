@@ -80,6 +80,16 @@ struct PINOCCHIO_API HumanSkeleton : public Skeleton {
     HumanSkeleton();
 };
 
+class PINOCCHIO_API SmartBodySkeleton : public Skeleton {
+public:
+    SmartBodySkeleton();
+};
+
+class PINOCCHIO_API SmartBodyNewSkeleton : public Skeleton {
+public:
+    SmartBodyNewSkeleton();
+};
+
 struct PINOCCHIO_API QuadSkeleton : public Skeleton {
     QuadSkeleton();
 };

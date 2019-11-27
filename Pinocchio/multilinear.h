@@ -58,8 +58,7 @@ class Multilinear
     }
 
   private:
-    //noncopyable
-    Multilinear(const Multilinear &);
+    Multilinear(const Multilinear &); //noncopyable
 
     template<class Real>
       static Real pos(const Real &r1, const Real &r2)

@@ -39,6 +39,7 @@ struct MeshEdge {
   MeshEdge() : vertex(-1), prev(-1), twin(-1) {}
 
   int vertex; // The vertex the edge points to--the start vertex is prev->vertex
+  int tvertex;
   int prev; // CCW, next is prev->prev
   int twin;
 };
@@ -67,6 +68,7 @@ class PINOCCHIO_API Mesh {
   public:
     std::vector<MeshVertex> vertices;
     std::vector<MeshEdge> edges; // Half-Edges, really
+    std::vector<Vector3> texCoords;
 
     Vector3 toAdd;
     double scale;
