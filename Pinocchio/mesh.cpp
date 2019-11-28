@@ -119,6 +119,7 @@ void Mesh::computeTopology()
       Debugging::out() << "Error: duplicate edge detected: " << v1 << " to " << v2 << std::endl;
       OUT;
     }
+
     halfEdgeMap[v1][v2] = i;
     if(halfEdgeMap[v2].count(v1)) {
       int twin = halfEdgeMap[v2][v1];
@@ -263,15 +264,25 @@ void Mesh::readObj(std::istream &strm)
     if(words[0][0] == '#') //comment
       continue;
 
-    //if(words[0].size() != 1) //unknown line
-    //  continue;
+    //deal with the line based on the first word
+    if (words[0] == "vt") { // texture coordinates
+        double tx, ty;
+        sscanf(words[1].c_str(), "%lf", &tx);
+        sscanf(words[2].c_str(), "%lf", &ty);
+        texCoords.push_back(Vector3(tx,ty,0.0));
 
-    if (words[0] == "vt") {
-      double tx,ty;
-      sscanf(words[1].c_str(), "%lf", &tx);
-      sscanf(words[2].c_str(), "%lf", &ty);
-      texCoords.push_back(Vector3(tx,ty,0.0));
-    } else if(words[0][0] == 'v' && words[0].size() == 1) { //deal with the line based on the first word
+    } else if (words[0] == "vn") { // vertex normal
+        if (words.size() != 4) {
+          Debugging::out() << "Error on line " << lineNum << std::endl;
+          OUT;
+        }
+
+        double nx, ny, nz;
+        sscanf(words[1].c_str(), "%lf", &nx);
+        sscanf(words[2].c_str(), "%lf", &ny);
+        sscanf(words[3].c_str(), "%lf", &nz);
+
+    } else if(words[0][0] == 'v' && words[0].size() == 1) { // geometric vertices
         if (words.size() != 4) {
           Debugging::out() << "Error on line " << lineNum << std::endl;
           OUT;
@@ -284,35 +295,36 @@ void Mesh::readObj(std::istream &strm)
 
         vertices.resize(vertices.size() + 1);
         vertices.back().pos = Vector3(x, y, z);
-    } else if(words[0].size() != 1) {
-      continue;
+
+    } else if(words[0].size() != 1) { // unknown line
+        continue;
     }
 
-    if (words[0][0] == 'f') {
-      if (words.size() < 4 || words.size() > 15) {
+    if (words[0][0] == 'f') { // polygonal face element
+        if (words.size() < 4 || words.size() > 15) {
           Debugging::out() << "Error on line " << lineNum << std::endl;
           OUT;
-      }
+        }
 
-      int a[16];
-      int t[16];
-      for(i = 0; i < (int)words.size() - 1; ++i) {
-        sscanf(words[i + 1].c_str(), "%d/%d", a + i, t + i);
-      }
+        int a[16];
+        int t[16];
+        for(i = 0; i < (int)words.size() - 1; ++i) {
+          sscanf(words[i + 1].c_str(), "%d/%d", a + i, t + i);
+        }
 
-      //swap(a[1], a[2]); //TODO:remove
+        //swap(a[1], a[2]); //TODO:remove
 
-      for(int j = 2; j < (int)words.size() - 1; ++j) {
-        int first = edges.size();
-        edges.resize(edges.size() + 3);
-        edges[first].vertex = a[0] - 1;
-        edges[first + 1].vertex = a[j - 1] - 1;
-        edges[first + 2].vertex = a[j] - 1;
+        for(int j = 2; j < (int)words.size() - 1; ++j) {
+          int first = edges.size();
+          edges.resize(edges.size() + 3);
+          edges[first].vertex = a[0] - 1;
+          edges[first + 1].vertex = a[j - 1] - 1;
+          edges[first + 2].vertex = a[j] - 1;
 
-        edges[first].tvertex = t[0] - 1;
-        edges[first + 1].tvertex = t[j - 1] - 1;
-        edges[first + 2].tvertex = t[j] - 1;
-      }
+          edges[first].tvertex = t[0] - 1;
+          edges[first + 1].tvertex = t[j - 1] - 1;
+          edges[first + 2].tvertex = t[j] - 1;
+        }
 
     }
 
