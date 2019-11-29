@@ -10,7 +10,8 @@ MINOR= 0
 SOURCES= \
 	attachment.cpp discretization.cpp indexer.cpp lsqSolver.cpp mesh.cpp \
 	graphutils.cpp intersector.cpp matrix.cpp skeleton.cpp embedding.cpp \
-	pinocchioApi.cpp PinnocchioCallback.cpp refinement.cpp quatinterface.cpp
+	pinocchioApi.cpp PinnocchioCallback.cpp refinement.cpp quatinterface.cpp \
+	yaml.cpp
 
 SHARED_OBJS = $(SOURCES:.cpp=.shared.o)
 STATIC_OBJS = $(SOURCES:.cpp=.static.o)
@@ -41,14 +42,13 @@ LDFLAGS= \
 	-Wl,--no-undefined \
 	-Wl,--no-allow-shlib-undefined
 
-EXTRA_LDFLAGS=
-
+SHARED_LDFLAGS= -fPIC -Wl,--version-script=libcode.version
 ARFLAGS= cr
 
 LIBS= $(shell $(PKGCONFIG) --libs $(PACKAGES) 2>/dev/null)
 
 $(LIBRARY).so.$(MAJOR).$(MINOR): $(SHARED_OBJS)
-	$(CXX) $(LDFLAGS) $(EXTRA_LDFLAGS) -shared \
+	$(CXX) $(LDFLAGS) $(SHARED_LDFLAGS) -shared \
 		-Wl,-soname,$(LIBRARY).so.$(MAJOR) \
 		-o $(LIBRARY).so.$(MAJOR).$(MINOR) \
 		$+ -o $@ $(LIBS)
@@ -72,7 +72,7 @@ $(LIBRARY).a: $(STATIC_OBJS)
 	$(CC) -o $@ -c $+ $(SHARED_CFLAGS)
 
 %.so : %.o
-	$(CXX) $(LDFLAGS) $(EXTRA_LDFLAGS) -shared $^ -o $@
+	$(CXX) $(LDFLAGS) $(SHARED_LDFLAGS) -shared $^ -o $@
 
 %.static.o: %.cpp
 	$(CXX) -o $@ -c $+ $(STATIC_CFLAGS)
