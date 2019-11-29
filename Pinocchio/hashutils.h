@@ -22,12 +22,11 @@
 #include "mathutils.h"
 
 namespace std {
-  template<class T1, class T2>
+    template<class T1, class T2>
     struct hash<pair<T1, T2> > {
-      size_t operator()(const pair<T1, T2> &p) const {
-        return hash<T1>()(p.first) + 37 * hash<T2>()(p.second);
-      }
+        size_t operator()(const pair<T1, T2> &p) const {
+            return hash<T1>()(p.first) + 37 * hash<T2>()(p.second);
+        }
     };
 }
-
 #endif // HASHUTILS_H_BFCF2002_4190_11E9_AA8F_EFB66606E782

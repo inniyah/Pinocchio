@@ -24,55 +24,54 @@
 
 namespace Pinocchio {
 
-struct PtGraph {
-  std::vector<Vector3> verts;
-  std::vector<std::vector<int> > edges;
+    struct PtGraph {
+        std::vector<Vector3> verts;
+        std::vector<std::vector<int> > edges;
 
-  bool integrityCheck() const;
-};
-
-class ShortestPather {
-  public:
-    ShortestPather(const PtGraph &g, int root);
-
-    std::vector<int> pathFrom(int vtx) const {
-      std::vector<int> out(1, vtx);
-      while(prev[vtx] >= 0) {
-        out.push_back(vtx = prev[vtx]);
-      }
-      return out;
-    }
-    double distFrom(int vtx) const { return dist[vtx]; }
-
-  private:
-    struct Inf {
-      Inf(double inDist, int inNode, int inPrev) : dist(inDist), node(inNode), prev(inPrev) {}
-      bool operator<(const Inf &inf) const { return dist > inf.dist; }
-      double dist;
-      int node, prev;
+        bool integrityCheck() const;
     };
 
-    std::vector<int> prev;
-    std::vector<double> dist;
-};
+    class ShortestPather {
+        public:
+            ShortestPather(const PtGraph &g, int root);
 
-class AllShortestPather {
-  public:
-    AllShortestPather() {}
+            std::vector<int> pathFrom(int vtx) const {
+                std::vector<int> out(1, vtx);
+                while(prev[vtx] >= 0) {
+                    out.push_back(vtx = prev[vtx]);
+                }
+                return out;
+            }
+            double distFrom(int vtx) const { return dist[vtx]; }
 
-    AllShortestPather(const PtGraph &g) {
-      for (int i = 0; i < (int)g.verts.size(); ++i) {
-        paths.push_back(ShortestPather(g, i));
-      }
-    }
+        private:
+            struct Inf {
+                Inf(double inDist, int inNode, int inPrev) : dist(inDist), node(inNode), prev(inPrev) {}
+                bool operator<(const Inf &inf) const { return dist > inf.dist; }
+                double dist;
+                int node, prev;
+            };
 
-    std::vector<int> path(int from, int to) const { return paths[to].pathFrom(from); }
-    double dist(int from, int to) const { return paths[to].distFrom(from); }
+            std::vector<int> prev;
+            std::vector<double> dist;
+    };
 
-  private:
-    std::vector<ShortestPather> paths;
-};
+    class AllShortestPather {
+        public:
+            AllShortestPather() {}
+
+            AllShortestPather(const PtGraph &g) {
+                for (int i = 0; i < (int)g.verts.size(); ++i) {
+                    paths.push_back(ShortestPather(g, i));
+                }
+            }
+
+            std::vector<int> path(int from, int to) const { return paths[to].pathFrom(from); }
+            double dist(int from, int to) const { return paths[to].distFrom(from); }
+
+        private:
+            std::vector<ShortestPather> paths;
+    };
 
 } // namespace Pinocchio
-
 #endif // GRAPHUTILS_H_BFCF2002_4190_11E9_AA8F_EFB66606E782

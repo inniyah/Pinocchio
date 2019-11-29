@@ -22,50 +22,50 @@
 #include "vector.h"
 
 template<class Real, int Vars> class Deriv {
-  public:
-    typedef Deriv<Real, Vars> Self;
+    public:
+        typedef Deriv<Real, Vars> Self;
 
-    Deriv() : x(Real()) {}
-    Deriv(const Real &inX) : x(inX) {}
-    Deriv(const Real &inX, int varNum) : x(inX) { d[varNum] = Real(1.); }
-    Deriv(const Self &inD) : x(inD.x), d(inD.d) {}
-    Deriv(const Real &inX, const Vector<Real, Vars> &inD) : x(inX), d(inD) {}
+        Deriv() : x(Real()) {}
+        Deriv(const Real &inX) : x(inX) {}
+        Deriv(const Real &inX, int varNum) : x(inX) { d[varNum] = Real(1.); }
+        Deriv(const Self &inD) : x(inD.x), d(inD.d) {}
+        Deriv(const Real &inX, const Vector<Real, Vars> &inD) : x(inX), d(inD) {}
 
-    Real getReal() const { return x; }
-    Real getDeriv(int num = 0) const { return d[num]; }
+        Real getReal() const { return x; }
+        Real getDeriv(int num = 0) const { return d[num]; }
 
-    Self operator*(const Self &other) const { return Self(x * other.x, x * other.d + other.x * d); }
-    Self operator+(const Self &other) const { return Self(x + other.x, d + other.d); }
-    Self operator-(const Self &other) const { return Self(x - other.x, d - other.d); }
-    Self operator/(const Self &other) const { return Self(x / other.x, (other.x * d - x * other.d) / SQR(other.x)); }
-    Self operator-() const { return Self(-x, -d); }
-    Self &operator+=(const Self &other) { x += other.x; d += other.d; return *this; }
-    Self &operator-=(const Self &other) { x -= other.x; d -= other.d; return *this; }
-    Self &operator*=(const Self &other) { (*this) = (*this) * other; return *this; }
-    Self &operator/=(const Self &other) { (*this) = (*this) / other; return *this; }
+        Self operator*(const Self &other) const { return Self(x * other.x, x * other.d + other.x * d); }
+        Self operator+(const Self &other) const { return Self(x + other.x, d + other.d); }
+        Self operator-(const Self &other) const { return Self(x - other.x, d - other.d); }
+        Self operator/(const Self &other) const { return Self(x / other.x, (other.x * d - x * other.d) / SQR(other.x)); }
+        Self operator-() const { return Self(-x, -d); }
+        Self &operator+=(const Self &other) { x += other.x; d += other.d; return *this; }
+        Self &operator-=(const Self &other) { x -= other.x; d -= other.d; return *this; }
+        Self &operator*=(const Self &other) { (*this) = (*this) * other; return *this; }
+        Self &operator/=(const Self &other) { (*this) = (*this) / other; return *this; }
 
-    bool operator<(const Self &other) const { return x < other.x; }
-    bool operator<=(const Self &other) const { return x <= other.x; }
-    bool operator>(const Self &other) const { return x > other.x; }
-    bool operator>=(const Self &other) const { return x >= other.x; }
-    bool operator==(const Self &other) const { return x == other.x; }
-    bool operator!=(const Self &other) const { return x != other.x; }
+        bool operator<(const Self &other) const { return x < other.x; }
+        bool operator<=(const Self &other) const { return x <= other.x; }
+        bool operator>(const Self &other) const { return x > other.x; }
+        bool operator>=(const Self &other) const { return x >= other.x; }
+        bool operator==(const Self &other) const { return x == other.x; }
+        bool operator!=(const Self &other) const { return x != other.x; }
 
-    operator Real() const { return x; }
+        operator Real() const { return x; }
 
-    //for internal use
-    const Real &_x() const { return x; }
-    const Vector<Real, Vars> &_d() const { return d; }
+        //for internal use
+        const Real &_x() const { return x; }
+        const Vector<Real, Vars> &_d() const { return d; }
 
-  private:
+    private:
 
-    Real x;
-    Vector<Real, Vars> d;
+        Real x;
+        Vector<Real, Vars> d;
 };
 
 #define DerivRV Deriv<Real, Vars>
 #define ONEVAR(func, deriv) template<class Real, int Vars> \
-  DerivRV func(const DerivRV &x) { return DerivRV(func(x._x()), x._d() * (deriv)); }
+    DerivRV func(const DerivRV &x) { return DerivRV(func(x._x()), x._d() * (deriv)); }
 
 ONEVAR(sqrt, Real(0.5) / sqrt(x._x()))
 ONEVAR(log, Real(1.) / x._x())
@@ -82,7 +82,7 @@ ONEVAR(fabs, x._x() < Real(0.) ? Real(-1.) : Real(1.))
 
 #undef ONEVAR
 #define TWOVAR(func, derivx, derivy) template<class Real, int Vars> \
-  DerivRV func(const DerivRV &x, const DerivRV &y) { return DerivRV(func(x._x(), y._x()), x._d() * (derivx) + y._d() * (derivy)); }
+    DerivRV func(const DerivRV &x, const DerivRV &y) { return DerivRV(func(x._x(), y._x()), x._d() * (derivx) + y._d() * (derivy)); }
 
 TWOVAR(pow, y._x() * pow(x._x(), y._x() - Real(1.)), log(x._x()) * pow(x._x(), y._x()))
 TWOVAR(atan2, y._x() / (SQR(x._x()) + SQR(y._x())), -x._x() / (SQR(x._x()) + SQR(y._x())))
@@ -91,10 +91,8 @@ TWOVAR(atan2, y._x() / (SQR(x._x()) + SQR(y._x())), -x._x() / (SQR(x._x()) + SQR
 #undef DerivRV
 
 template <class charT, class traits, class Real, int Vars>
-std::basic_ostream<charT,traits>& operator<<(std::basic_ostream<charT,traits>& os, const Deriv<Real, Vars> &d)
-{
-  os << "Deriv(" << d._x() << ", " << d._d() << ")";
-  return os;
+std::basic_ostream<charT,traits>& operator<<(std::basic_ostream<charT,traits>& os, const Deriv<Real, Vars> &d) {
+    os << "Deriv(" << d._x() << ", " << d._d() << ")";
+    return os;
 }
-
 #endif // DERIV_H_BDB262D4_4631_11E9_84BF_67993DCD7514

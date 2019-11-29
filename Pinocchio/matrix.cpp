@@ -21,137 +21,120 @@
 
 namespace Pinocchio {
 
-namespace EigPrivate
-{
-  std::pair<int, double> findMaxAbs(const Vectorn<double> &vec, int maxElem)
-  {
-    std::pair<int, double> out = std::make_pair(0, fabs(vec[0]));
-    for(int i = 1; i < maxElem; ++i)
-      if(vec[i] > out.second)
-        out = std::make_pair(i, fabs(vec[i]));
-    return out;
-  }
-
-  void jacobi(int row, int col, Matrixn<double> &m, Matrixn<double> *vectors)
-  {
-    double num = m[row][row] - m[col][col];
-    double dem = 2. * m[row][col];
-
-    double theta = num / dem;
-    double t;
-    if(fabs(theta) > 1e20)
+    namespace EigPrivate
     {
-      t = m[row][col] / num;
-    }
-    else
-    {
-      t = (theta > 0 ? 1. : -1.) / (fabs(theta) + sqrt(theta * theta + 1.));
-    }
+        std::pair<int, double> findMaxAbs(const Vectorn<double> &vec, int maxElem) {
+            std::pair<int, double> out = std::make_pair(0, fabs(vec[0]));
+            for(int i = 1; i < maxElem; ++i)
+                if(vec[i] > out.second)
+                    out = std::make_pair(i, fabs(vec[i]));
+            return out;
+        }
 
-    double c = 1. / sqrt(t * t + 1.);
-    double s = t * c;
+        void jacobi(int row, int col, Matrixn<double> &m, Matrixn<double> *vectors) {
+            double num = m[row][row] - m[col][col];
+            double dem = 2. * m[row][col];
 
-    double tau = s / (1. + c);
+            double theta = num / dem;
+            double t;
+            if(fabs(theta) > 1e20) {
+                t = m[row][col] / num;
+            }
+            else {
+                t = (theta > 0 ? 1. : -1.) / (fabs(theta) + sqrt(theta * theta + 1.));
+            }
 
-    //rotation
-    m[col][col] -= t * m[row][col];
-    m[row][row] += t * m[row][col];
+            double c = 1. / sqrt(t * t + 1.);
+            double s = t * c;
 
-    int i;
-    for(i = 0; i < col; ++i)
-    {
-      double oldCI = m[col][i];
-      m[col][i] -= s * (m[row][i] + tau * m[col][i]);
-      m[row][i] += s * (oldCI - tau * m[row][i]);
-    }
-    for(i = col + 1; i < row; ++i)
-    {
-      double oldIC = m[i][col];
-      m[i][col] -= s * (m[row][i] + tau * m[i][col]);
-      m[row][i] += s * (oldIC - tau * m[row][i]);
-    }
-    for(i = row + 1; i < m.getRows(); ++i)
-    {
-      double oldIC = m[i][col];
-      m[i][col] -= s * (m[i][row] + tau * m[i][col]);
-      m[i][row] += s * (oldIC - tau * m[i][row]);
-    }
+            double tau = s / (1. + c);
 
-    if(vectors)
-    {
-      for(i = 0; i < m.getRows(); ++i)
-      {
-        double oldIC = (*vectors)[i][col];
-        (*vectors)[i][col] -= s * ((*vectors)[i][row] + tau * (*vectors)[i][col]);
-        (*vectors)[i][row] += s * (oldIC - tau * (*vectors)[i][row]);
-      }
+            //rotation
+            m[col][col] -= t * m[row][col];
+            m[row][row] += t * m[row][col];
+
+            int i;
+            for(i = 0; i < col; ++i) {
+                double oldCI = m[col][i];
+                m[col][i] -= s * (m[row][i] + tau * m[col][i]);
+                m[row][i] += s * (oldCI - tau * m[row][i]);
+            }
+            for(i = col + 1; i < row; ++i) {
+                double oldIC = m[i][col];
+                m[i][col] -= s * (m[row][i] + tau * m[i][col]);
+                m[row][i] += s * (oldIC - tau * m[row][i]);
+            }
+            for(i = row + 1; i < m.getRows(); ++i) {
+                double oldIC = m[i][col];
+                m[i][col] -= s * (m[i][row] + tau * m[i][col]);
+                m[i][row] += s * (oldIC - tau * m[i][row]);
+            }
+
+            if(vectors) {
+                for(i = 0; i < m.getRows(); ++i) {
+                    double oldIC = (*vectors)[i][col];
+                    (*vectors)[i][col] -= s * ((*vectors)[i][row] + tau * (*vectors)[i][col]);
+                    (*vectors)[i][row] += s * (oldIC - tau * (*vectors)[i][row]);
+                }
+            }
+
+            m[row][col] = 0;
+        }
     }
 
-    m[row][col] = 0;
-  }
-}
+    using namespace EigPrivate;
 
+    Vectorn<double> getEigensystem(Matrixn<double> m, Matrixn<double> *vectors) {
+        int i;
+        assert(m.getRows() == m.getCols());
+        int sz = m.getRows();
+        assert(sz > 1);
+        if(vectors)
+            *vectors = Matrixn<double>::identity(sz);
 
-using namespace EigPrivate;
+        const double tol = 1e-12;
+        int iter = 0;
+        while(++iter < 50) {
+            int j;
+            double biggestSoFar = -1;
+            for(i = 0; i < sz; ++i) for(j = 0; j < i; ++j) {
+                biggestSoFar = std::max(biggestSoFar, fabs(m[i][j]));
+                jacobi(i, j, m, vectors);
+            }
+            if(biggestSoFar < tol)
+                break;
+        }
+        Debugging::out() << iter << std::endl;
 
-Vectorn<double> getEigensystem(Matrixn<double> m, Matrixn<double> *vectors)
-{
-  int i;
-  assert(m.getRows() == m.getCols());
-  int sz = m.getRows();
-  assert(sz > 1);
-  if(vectors)
-    *vectors = Matrixn<double>::identity(sz);
+        Vectorn<double> out(sz);
+        for(i = 0; i < sz; ++i)
+            out[i] = m[i][i];
 
-  const double tol = 1e-12;
-  int iter = 0;
-  while(++iter < 50)
-  {
-    int j;
-    double biggestSoFar = -1;
-    for(i = 0; i < sz; ++i) for(j = 0; j < i; ++j)
-    {
-      biggestSoFar = std::max(biggestSoFar, fabs(m[i][j]));
-      jacobi(i, j, m, vectors);
-    }
-    if(biggestSoFar < tol)
-      break;
-  }
-  Debugging::out() << iter << std::endl;
+        //now sort by decreasing eigenvalue
+        std::vector<std::pair<double, int> > perm;
+        for(i = 0; i < sz; ++i) {
+            perm.push_back(std::make_pair(fabs(out[i]), i));
+        }
+        sort(perm.begin(), perm.end());
+        std::reverse(perm.begin(), perm.end());
+        Vectorn<double> oldOut = out;
 
-  Vectorn<double> out(sz);
-  for(i = 0; i < sz; ++i)
-    out[i] = m[i][i];
+        if(!vectors) {
+            for(i = 0; i < sz; ++i)
+                out[i] = oldOut[perm[i].second];
+        }
+        else {
+            Matrixn<double> oldVectors = ~(*vectors);
 
-  //now sort by decreasing eigenvalue
-  std::vector<std::pair<double, int> > perm;
-  for(i = 0; i < sz; ++i)
-  {
-    perm.push_back(std::make_pair(fabs(out[i]), i));
-  }
-  sort(perm.begin(), perm.end());
-  std::reverse(perm.begin(), perm.end());
-  Vectorn<double> oldOut = out;
+            for(i = 0; i < sz; ++i) {
+                out[i] = oldOut[perm[i].second];
+                (*vectors)[i] = oldVectors[perm[i].second];
+            }
 
-  if(!vectors)
-  {
-    for(i = 0; i < sz; ++i)
-      out[i] = oldOut[perm[i].second];
-  }
-  else
-  {
-    Matrixn<double> oldVectors = ~(*vectors);
+            *vectors = ~(*vectors);
+        }
 
-    for(i = 0; i < sz; ++i)
-    {
-      out[i] = oldOut[perm[i].second];
-      (*vectors)[i] = oldVectors[perm[i].second];
+        return out;
     }
 
-    *vectors = ~(*vectors);
-  }
-
-  return out;
-}
-
-} // namespace Pinocchio
+}                                                           // namespace Pinocchio

@@ -24,278 +24,257 @@
 
 namespace Pinocchio {
 
-std::ostream *Debugging::outStream = new std::ofstream();
+    std::ostream *Debugging::outStream = new std::ofstream();
 
-PinocchioOutput autorig(const Skeleton &given, const Mesh &m, bool computeSkinWeights)
-{
-  int i;
-  PinocchioOutput out;
+    PinocchioOutput autorig(const Skeleton &given, const Mesh &m, bool computeSkinWeights) {
+        int i;
+        PinocchioOutput out;
 
-  Mesh newMesh = prepareMesh(m);
+        Mesh newMesh = prepareMesh(m);
 
-  if(newMesh.vertices.size() == 0)
-    return out;
+        if(newMesh.vertices.size() == 0)
+            return out;
 
-  TreeType *distanceField = constructDistanceField(newMesh);
+        TreeType *distanceField = constructDistanceField(newMesh);
 
-  //discretization
-  std::vector<Sphere> medialSurface = sampleMedialSurface(distanceField);
+        //discretization
+        std::vector<Sphere> medialSurface = sampleMedialSurface(distanceField);
 
-  std::vector<Sphere> spheres = packSpheres(medialSurface);
+        std::vector<Sphere> spheres = packSpheres(medialSurface);
 
-  PtGraph graph = connectSamples(distanceField, spheres);
+        PtGraph graph = connectSamples(distanceField, spheres);
 
-  //discrete embedding
-  std::vector<std::vector<int> > possibilities = computePossibilities(graph, spheres, given);
+        //discrete embedding
+        std::vector<std::vector<int> > possibilities = computePossibilities(graph, spheres, given);
 
-  //constraints can be set by respecifying possibilities for skeleton joints:
-  //to constrain joint i to sphere j, use: possiblities[i] = std::vector<int>(1, j);
+        //constraints can be set by respecifying possibilities for skeleton joints:
+        //to constrain joint i to sphere j, use: possiblities[i] = std::vector<int>(1, j);
 
-  std::vector<int> embeddingIndices = discreteEmbed(graph, spheres, given, possibilities);
+        std::vector<int> embeddingIndices = discreteEmbed(graph, spheres, given, possibilities);
 
-  //failure
-  if(embeddingIndices.size() == 0) {
-    delete distanceField;
-    return out;
-  }
+        //failure
+        if(embeddingIndices.size() == 0) {
+            delete distanceField;
+            return out;
+        }
 
-  std::vector<Vector3> discreteEmbedding = splitPaths(embeddingIndices, graph, given);
+        std::vector<Vector3> discreteEmbedding = splitPaths(embeddingIndices, graph, given);
 
-  //continuous refinement
-  std::vector<Vector3> medialCenters(medialSurface.size());
-  for(i = 0; i < (int)medialSurface.size(); ++i) {
-    medialCenters[i] = medialSurface[i].center;
-  }
+        //continuous refinement
+        std::vector<Vector3> medialCenters(medialSurface.size());
+        for(i = 0; i < (int)medialSurface.size(); ++i) {
+            medialCenters[i] = medialSurface[i].center;
+        }
 
-  out.embedding = refineEmbedding(distanceField, medialCenters, discreteEmbedding, given);
+        out.embedding = refineEmbedding(distanceField, medialCenters, discreteEmbedding, given);
 
-  if (computeSkinWeights) {
-    VisTester<TreeType> *tester = new VisTester<TreeType>(distanceField);
-    out.attachment = new Attachment(newMesh, given, out.embedding, tester);
-    delete tester;
-  }
+        if (computeSkinWeights) {
+            VisTester<TreeType> *tester = new VisTester<TreeType>(distanceField);
+            out.attachment = new Attachment(newMesh, given, out.embedding, tester);
+            delete tester;
+        }
 
-  delete distanceField;
+        delete distanceField;
 
-  return out;
-}
+        return out;
+    }
 
-Vector3 PINOCCHIO_API barycentricCoord(Vector3& pt, Tri3Object& tri)
-{
-	float w1,w2,w3;
-	Vector3 ptToV1 = tri.v1 - pt;
-	Vector3 ptToV2 = tri.v2 - pt;
-	Vector3 ptToV3 = tri.v2 - pt;
-	Vector3 cross1 = ptToV1%ptToV2;
-	double area1 = cross1.length();
-	Vector3 cross2 = ptToV2%ptToV3;
-	double area2 = cross2.length();
-	Vector3 cross3 = ptToV3%ptToV1;
-	double area3 = cross3.length();
-	double totalArea = area1 + area2 + area3;
-	if (totalArea == 0)
-	{
-		w1 = 1.0;
-		w2 = 0.0;
-		w3 = 0.0;
-	}
-	else
-	{
-		w1 = (float)area2 / (float)totalArea;
-		w2 = (float)area3 / (float)totalArea;
-		w3 = (float)area1 / (float)totalArea;
-	}
-	return Vector3(w1,w2,w3);
-}
+    Vector3 PINOCCHIO_API barycentricCoord(Vector3& pt, Tri3Object& tri) {
+        float w1,w2,w3;
+        Vector3 ptToV1 = tri.v1 - pt;
+        Vector3 ptToV2 = tri.v2 - pt;
+        Vector3 ptToV3 = tri.v2 - pt;
+        Vector3 cross1 = ptToV1%ptToV2;
+        double area1 = cross1.length();
+        Vector3 cross2 = ptToV2%ptToV3;
+        double area2 = cross2.length();
+        Vector3 cross3 = ptToV3%ptToV1;
+        double area3 = cross3.length();
+        double totalArea = area1 + area2 + area3;
+        if (totalArea == 0) {
+            w1 = 1.0;
+            w2 = 0.0;
+            w3 = 0.0;
+        }
+        else {
+            w1 = (float)area2 / (float)totalArea;
+            w2 = (float)area3 / (float)totalArea;
+            w3 = (float)area1 / (float)totalArea;
+        }
+        return Vector3(w1,w2,w3);
+    }
 
+    PinocchioOutput PINOCCHIO_API autoRigSkinWeightOnly( const Skeleton &given, Mesh &voxelMesh, Mesh& origMesh, std::vector<Vector3>& inputSkeleton ) {
+        PinocchioOutput out;
 
-PinocchioOutput PINOCCHIO_API autoRigSkinWeightOnly( const Skeleton &given, Mesh &voxelMesh, Mesh& origMesh, std::vector<Vector3>& inputSkeleton )
-{
-	PinocchioOutput out;
+        Mesh newMesh = prepareMesh(voxelMesh);
 
-	Mesh newMesh = prepareMesh(voxelMesh);
+        if(newMesh.vertices.size() == 0)
+            return out;
 
-	if(newMesh.vertices.size() == 0)
-		return out;
+        TreeType *distanceField = constructDistanceField(newMesh);
 
-	TreeType *distanceField = constructDistanceField(newMesh);
+        out.embedding = inputSkeleton;
+        //out.embedding = refineEmbedding(distanceField, medialCenters, discreteEmbedding, given);
+        //out.embedding.resize()
 
+        {
+            //attachment for voxel mesh
+            VisTester<TreeType> *tester = new VisTester<TreeType>(distanceField);
+            Attachment* voxelAttachment = new Attachment(newMesh ,given, out.embedding, tester);
+            out.attachment = new Attachment();
 
-	out.embedding = inputSkeleton;
-	//out.embedding = refineEmbedding(distanceField, medialCenters, discreteEmbedding, given);
-	//out.embedding.resize()
+            std::vector<Tri3Object> triobjvec;
+            for(int i = 0; i < (int)voxelMesh.edges.size(); i += 3) {
+                Vector3 v1 = voxelMesh.vertices[voxelMesh.edges[i].vertex].pos;
+                Vector3 v2 = voxelMesh.vertices[voxelMesh.edges[i + 1].vertex].pos;
+                Vector3 v3 = voxelMesh.vertices[voxelMesh.edges[i + 2].vertex].pos;
+                triobjvec.push_back(Tri3Object(v1, v2, v3,i/3));
+            }
 
+            ObjectProjector<3, Tri3Object> proj(triobjvec);
+            std::vector<Vector<double, -1> >& meshWeights = out.attachment->getAllWeights();
+            meshWeights.resize(origMesh.vertices.size());
+            printf("mesh weights size = %ld\n", meshWeights.size());
+            Tri3Object projTri;
+            int bones = given.fGraph().verts.size() - 1;
+            for (unsigned int i=0;i<origMesh.vertices.size();i++) {
+                MeshVertex& vtx = origMesh.vertices[i];
+                Vector<double, -1>& origWeight = meshWeights[i];
+                origWeight[bones - 1] = 0.f;
+                for (int k=0;k<bones;k++)                   // set to zero
+                    origWeight[k] = 0.f;
 
-	{
-		//attachment for voxel mesh
-		VisTester<TreeType> *tester = new VisTester<TreeType>(distanceField);
-		Attachment* voxelAttachment = new Attachment(newMesh ,given, out.embedding, tester);
-		out.attachment = new Attachment();
+                Vector3 projPos = proj.projectObj(vtx.pos,projTri);
+                Vector3 baryW = barycentricCoord(projPos, projTri);
+                for (int v=0;v<3;v++) {
+                    int vidx = voxelMesh.edges[projTri.triIdx*3+v].vertex;
+                    Vector<double, -1> voxelWeight = voxelAttachment->getWeights(vidx);
+                    for (int k=0;k<origWeight.size();k++) {
+                        origWeight[k] += voxelWeight[k]*baryW[v];
+                        //printf("voxel weight[%d] = %f\n", k,voxelWeight[k]);
+                    }
+                }
+            }
+            //cleanup
+            delete tester;
+            delete voxelAttachment;
+        }
+        delete distanceField;
+        return out;
+    }
 
+    PinocchioOutput PINOCCHIO_API autorigVoxelTransfer( const Skeleton &given, Mesh &voxelMesh, Mesh& origMesh, bool computeSkinWeights ) {
 
-		std::vector<Tri3Object> triobjvec;
-		for(int i = 0; i < (int)voxelMesh.edges.size(); i += 3) {
-			Vector3 v1 = voxelMesh.vertices[voxelMesh.edges[i].vertex].pos;
-			Vector3 v2 = voxelMesh.vertices[voxelMesh.edges[i + 1].vertex].pos;
-			Vector3 v3 = voxelMesh.vertices[voxelMesh.edges[i + 2].vertex].pos;
-			triobjvec.push_back(Tri3Object(v1, v2, v3,i/3));
-		}
+        int i;
+        PinocchioOutput out;
 
-		ObjectProjector<3, Tri3Object> proj(triobjvec);
-		std::vector<Vector<double, -1> >& meshWeights = out.attachment->getAllWeights();
-		meshWeights.resize(origMesh.vertices.size());
-		printf("mesh weights size = %ld\n", meshWeights.size());
-		Tri3Object projTri;
-		int bones = given.fGraph().verts.size() - 1;
-		for (unsigned int i=0;i<origMesh.vertices.size();i++)
-		{
-			MeshVertex& vtx = origMesh.vertices[i];
-			Vector<double, -1>& origWeight = meshWeights[i];
-			origWeight[bones - 1] = 0.f;
-			for (int k=0;k<bones;k++) // set to zero
-				origWeight[k] = 0.f;
+        PinnocchioCallBackManager& callbackManager = PinnocchioCallBackManager::singleton();
+        Mesh newMesh = prepareMesh(voxelMesh);
 
-			Vector3 projPos = proj.projectObj(vtx.pos,projTri);
-			Vector3 baryW = barycentricCoord(projPos, projTri);
-			for (int v=0;v<3;v++)
-			{
-				int vidx = voxelMesh.edges[projTri.triIdx*3+v].vertex;
-				Vector<double, -1> voxelWeight = voxelAttachment->getWeights(vidx);
-				for (int k=0;k<origWeight.size();k++)
-				{
-					origWeight[k] += voxelWeight[k]*baryW[v];
-					//printf("voxel weight[%d] = %f\n", k,voxelWeight[k]);
-				}
-			}
-		}
-		//cleanup
-		delete tester;
-		delete voxelAttachment;
-	}
-	delete distanceField;
-	return out;
-}
+        if(newMesh.vertices.size() == 0)
+            return out;
 
-PinocchioOutput PINOCCHIO_API autorigVoxelTransfer( const Skeleton &given, Mesh &voxelMesh, Mesh& origMesh, bool computeSkinWeights )
-{
+        TreeType *distanceField = constructDistanceField(newMesh);
+        callbackManager.runCallBack();
+        //discretization
+        std::vector<Sphere> medialSurface = sampleMedialSurface(distanceField);
+        callbackManager.runCallBack();
 
-	int i;
-	PinocchioOutput out;
+        std::vector<Sphere> spheres = packSpheres(medialSurface);
+        callbackManager.runCallBack();
 
-	PinnocchioCallBackManager& callbackManager = PinnocchioCallBackManager::singleton();
-	Mesh newMesh = prepareMesh(voxelMesh);
+        PtGraph graph = connectSamples(distanceField, spheres);
+        callbackManager.runCallBack();
+        //discrete embedding
+        std::vector<std::vector<int> > possibilities = computePossibilities(graph, spheres, given);
+        callbackManager.runCallBack();
+        //constraints can be set by respecifying possibilities for skeleton joints:
+        //to constrain joint i to sphere j, use: possiblities[i] = std::vector<int>(1, j);
 
-	if(newMesh.vertices.size() == 0)
-		return out;
+        std::vector<int> embeddingIndices = discreteEmbed(graph, spheres, given, possibilities);
+        callbackManager.runCallBack();
 
-	TreeType *distanceField = constructDistanceField(newMesh);
-	callbackManager.runCallBack();
-	//discretization
-	std::vector<Sphere> medialSurface = sampleMedialSurface(distanceField);
-	callbackManager.runCallBack();
+        if(embeddingIndices.size() == 0) {                  //failure
+            delete distanceField;
+            return out;
+        }
 
-	std::vector<Sphere> spheres = packSpheres(medialSurface);
-	callbackManager.runCallBack();
+        std::vector<Vector3> discreteEmbedding = splitPaths(embeddingIndices, graph, given);
+        callbackManager.runCallBack();
+        //continuous refinement
+        std::vector<Vector3> medialCenters(medialSurface.size());
+        for(i = 0; i < (int)medialSurface.size(); ++i)
+            medialCenters[i] = medialSurface[i].center;
 
-	PtGraph graph = connectSamples(distanceField, spheres);
-	callbackManager.runCallBack();
-	//discrete embedding
-	std::vector<std::vector<int> > possibilities = computePossibilities(graph, spheres, given);
-	callbackManager.runCallBack();
-	//constraints can be set by respecifying possibilities for skeleton joints:
-	//to constrain joint i to sphere j, use: possiblities[i] = std::vector<int>(1, j);
+        out.embedding = refineEmbedding(distanceField, medialCenters, discreteEmbedding, given);
 
-	std::vector<int> embeddingIndices = discreteEmbed(graph, spheres, given, possibilities);
-	callbackManager.runCallBack();
+        PinnocchioCallBack* callBack = callbackManager.getCallBack();
+        if (callBack) {
+            std::vector<Vector3> outSk(out.embedding.size());
+            for (unsigned int i=0;i<outSk.size();i++) {
+                outSk[i] = (out.embedding[i] - voxelMesh.toAdd) / voxelMesh.scale;
+            }
 
-	if(embeddingIndices.size() == 0) { //failure
-		delete distanceField;
-		return out;
-	}
+            callBack->skeletonCompleteCallBack(outSk);
 
-	std::vector<Vector3> discreteEmbedding = splitPaths(embeddingIndices, graph, given);
-	callbackManager.runCallBack();
-	//continuous refinement
-	std::vector<Vector3> medialCenters(medialSurface.size());
-	for(i = 0; i < (int)medialSurface.size(); ++i)
-		medialCenters[i] = medialSurface[i].center;
+            std::clock_t start;
+            double duration = 0.f;
 
-	out.embedding = refineEmbedding(distanceField, medialCenters, discreteEmbedding, given);
+            start = std::clock();
+            while (duration < 0.1f) {                       // delay 1sec to show the skeleton
+                duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+                callbackManager.runCallBack();
+            }
+        }
+        callbackManager.runCallBack();
 
-	PinnocchioCallBack* callBack = callbackManager.getCallBack();
-	if (callBack)
-	{
-		std::vector<Vector3> outSk(out.embedding.size());
-		for (unsigned int i=0;i<outSk.size();i++)
-		{
-			outSk[i] = (out.embedding[i] - voxelMesh.toAdd) / voxelMesh.scale;
-		}
+        if (computeSkinWeights) {
+            //attachment for voxel mesh
+            VisTester<TreeType> *tester = new VisTester<TreeType>(distanceField);
+            Attachment* voxelAttachment = new Attachment(newMesh, given, out.embedding, tester);
+            out.attachment = new Attachment();
 
-		callBack->skeletonCompleteCallBack(outSk);
+            std::vector<Tri3Object> triobjvec;
+            for(int i = 0; i < (int)voxelMesh.edges.size(); i += 3) {
+                Vector3 v1 = voxelMesh.vertices[voxelMesh.edges[i].vertex].pos;
+                Vector3 v2 = voxelMesh.vertices[voxelMesh.edges[i + 1].vertex].pos;
+                Vector3 v3 = voxelMesh.vertices[voxelMesh.edges[i + 2].vertex].pos;
+                triobjvec.push_back(Tri3Object(v1, v2, v3,i/3));
+            }
 
-		std::clock_t start;
-		double duration = 0.f;
+            ObjectProjector<3, Tri3Object> proj(triobjvec);
+            std::vector<Vector<double, -1> >& meshWeights = out.attachment->getAllWeights();
+            meshWeights.resize(origMesh.vertices.size());
+            printf("mesh weights size = %ld\n", meshWeights.size());
+            Tri3Object projTri;
+            int bones = given.fGraph().verts.size() - 1;
+            for (size_t i=0;i<origMesh.vertices.size();i++) {
+                MeshVertex& vtx = origMesh.vertices[i];
+                Vector<double, -1>& origWeight = meshWeights[i];
+                origWeight[bones - 1] = 0.f;
+                for (int k=0;k<bones;k++)                   // set to zero
+                    origWeight[k] = 0.f;
 
-		start = std::clock();
-		while (duration < 0.1f) // delay 1sec to show the skeleton
-		{
-			duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-			callbackManager.runCallBack();
-		}
-	}
-	callbackManager.runCallBack();
+                Vector3 projPos = proj.projectObj(vtx.pos,projTri);
+                Vector3 baryW = barycentricCoord(projPos, projTri);
+                for (int v=0;v<3;v++) {
+                    int vidx = voxelMesh.edges[projTri.triIdx*3+v].vertex;
+                    Vector<double, -1> voxelWeight = voxelAttachment->getWeights(vidx);
+                    for (int k=0;k<origWeight.size();k++) {
+                        origWeight[k] += voxelWeight[k]*baryW[v];
+                        //printf("voxel weight[%d] = %f\n", k,voxelWeight[k]);
+                    }
+                }
+            }
+            callbackManager.runCallBack();
+            //cleanup
+            delete tester;
+            delete voxelAttachment;
+        }
+        callbackManager.runCallBack();
+        delete distanceField;
+        return out;
+    }
 
-	if (computeSkinWeights)
-	{
-		//attachment for voxel mesh
-		VisTester<TreeType> *tester = new VisTester<TreeType>(distanceField);
-		Attachment* voxelAttachment = new Attachment(newMesh, given, out.embedding, tester);
-		out.attachment = new Attachment();
-
-
-		std::vector<Tri3Object> triobjvec;
-		for(int i = 0; i < (int)voxelMesh.edges.size(); i += 3) {
-			Vector3 v1 = voxelMesh.vertices[voxelMesh.edges[i].vertex].pos;
-			Vector3 v2 = voxelMesh.vertices[voxelMesh.edges[i + 1].vertex].pos;
-			Vector3 v3 = voxelMesh.vertices[voxelMesh.edges[i + 2].vertex].pos;
-			triobjvec.push_back(Tri3Object(v1, v2, v3,i/3));
-		}
-
-		ObjectProjector<3, Tri3Object> proj(triobjvec);
-		std::vector<Vector<double, -1> >& meshWeights = out.attachment->getAllWeights();
-		meshWeights.resize(origMesh.vertices.size());
-		printf("mesh weights size = %ld\n", meshWeights.size());
-		Tri3Object projTri;
-		int bones = given.fGraph().verts.size() - 1;
-		for (size_t i=0;i<origMesh.vertices.size();i++)
-		{
-			MeshVertex& vtx = origMesh.vertices[i];
-			Vector<double, -1>& origWeight = meshWeights[i];
-			origWeight[bones - 1] = 0.f;
-			for (int k=0;k<bones;k++) // set to zero
-				origWeight[k] = 0.f;
-
-			Vector3 projPos = proj.projectObj(vtx.pos,projTri);
-			Vector3 baryW = barycentricCoord(projPos, projTri);
-			for (int v=0;v<3;v++)
-			{
-				int vidx = voxelMesh.edges[projTri.triIdx*3+v].vertex;
-				Vector<double, -1> voxelWeight = voxelAttachment->getWeights(vidx);
-				for (int k=0;k<origWeight.size();k++)
-				{
-					origWeight[k] += voxelWeight[k]*baryW[v];
-					//printf("voxel weight[%d] = %f\n", k,voxelWeight[k]);
-				}
-			}
-		}
-		callbackManager.runCallBack();
-		//cleanup
-		delete tester;
-		delete voxelAttachment;
-	}
-	callbackManager.runCallBack();
-	delete distanceField;
-	return out;
-}
-
-} // namespace Pinocchio
+}                                                           // namespace Pinocchio

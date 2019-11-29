@@ -23,15 +23,14 @@
 
 namespace Pinocchio {
 
-class Debugging {
-  public:
-    static std::ostream &out() { return *outStream; }
-    static void PINOCCHIO_API setOutStream(std::ostream &os) { outStream = &os; }
+    class Debugging {
+        public:
+            static std::ostream &out() { return *outStream; }
+            static void PINOCCHIO_API setOutStream(std::ostream &os) { outStream = &os; }
 
-  private:
-    static std::ostream *outStream;
-};
+        private:
+            static std::ostream *outStream;
+    };
 
 } // namespace Pinocchio
-
 #endif // DEBUGGING_H_BFCF2002_4190_11E9_AA8F_EFB66606E782

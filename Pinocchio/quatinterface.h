@@ -27,9 +27,8 @@
 
 namespace Pinocchio {
 
-Tbx::Dual_quat_cu getQuatFromMat(Transform<> matrix);
-Vector3 transformPoint(Vector3 vpos, Tbx::Dual_quat_cu &dquat_blend);
+    Tbx::Dual_quat_cu getQuatFromMat(Transform<> matrix);
+    Vector3 transformPoint(Vector3 vpos, Tbx::Dual_quat_cu &dquat_blend);
 
 } // namespace Pinocchio
-
 #endif // QUATINTERFACE_H_BFCF2002_4190_11E9_AA8F_EFB66606E782

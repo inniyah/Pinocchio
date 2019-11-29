@@ -27,33 +27,31 @@
 
 namespace Pinocchio {
 
-class PinnocchioCallBack
-{
-public:
-  PINOCCHIO_API PinnocchioCallBack() {}
-  PINOCCHIO_API ~PinnocchioCallBack() {}
-  PINOCCHIO_API virtual void callbackFunc() = 0;
-  PINOCCHIO_API virtual void skeletonCompleteCallBack(std::vector<Vector3>& embedding) = 0;
-};
+    class PinnocchioCallBack {
+        public:
+            PINOCCHIO_API PinnocchioCallBack() {}
+            PINOCCHIO_API ~PinnocchioCallBack() {}
+            PINOCCHIO_API virtual void callbackFunc() = 0;
+            PINOCCHIO_API virtual void skeletonCompleteCallBack(std::vector<Vector3>& embedding) = 0;
+    };
 
-class PinnocchioCallBackManager
-{
-public:
-  PINOCCHIO_API PinnocchioCallBackManager();
-  PINOCCHIO_API ~PinnocchioCallBackManager();
-  PINOCCHIO_API void setCallBack(PinnocchioCallBack* pinoCallBack);
-  PINOCCHIO_API PinnocchioCallBack* getCallBack();
-  PINOCCHIO_API void runCallBack();
-  PINOCCHIO_API static PinnocchioCallBackManager* _singleton;
-public:
-  PINOCCHIO_API static PinnocchioCallBackManager& singleton();
+    class PinnocchioCallBackManager {
+        public:
+            PINOCCHIO_API PinnocchioCallBackManager();
+            PINOCCHIO_API ~PinnocchioCallBackManager();
+            PINOCCHIO_API void setCallBack(PinnocchioCallBack* pinoCallBack);
+            PINOCCHIO_API PinnocchioCallBack* getCallBack();
+            PINOCCHIO_API void runCallBack();
+            PINOCCHIO_API static PinnocchioCallBackManager* _singleton;
+        public:
+            PINOCCHIO_API static PinnocchioCallBackManager& singleton();
 
-  PINOCCHIO_API static PinnocchioCallBackManager* singletonPtr();
+            PINOCCHIO_API static PinnocchioCallBackManager* singletonPtr();
 
-  PINOCCHIO_API static void destroy_singleton();  
-protected:
-  PinnocchioCallBack* callBack;
-};
-#endif //PINNOCCHIOCALLBACK_H_13E7E210_111A_11EA_8253_6BEE12B60500
+            PINOCCHIO_API static void destroy_singleton();
+        protected:
+            PinnocchioCallBack* callBack;
+    };
 
 } // namespace Pinocchio
+#endif // PINNOCCHIOCALLBACK_H_13E7E210_111A_11EA_8253_6BEE12B60500

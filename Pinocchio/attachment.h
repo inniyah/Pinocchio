@@ -26,71 +26,70 @@
 
 namespace Pinocchio {
 
-class VisibilityTester {
-  public:
-    virtual ~VisibilityTester() {}
-    virtual bool canSee(const Vector3 &v1, const Vector3 &v2) const = 0;
-};
+    class VisibilityTester {
+        public:
+            virtual ~VisibilityTester() {}
+            virtual bool canSee(const Vector3 &v1, const Vector3 &v2) const = 0;
+    };
 
-template<class T>
-class VisTester : public VisibilityTester {
-  public:
-    VisTester(const T *t) : tree(t) {}
+    template<class T>
+    class VisTester : public VisibilityTester {
+        public:
+            VisTester(const T *t) : tree(t) {}
 
-    //faster when v2 is farther inside than v1
-    virtual bool canSee(const Vector3 &v1, const Vector3 &v2) const {
-      const double maxVal = 0.002;
-      double atV2 = tree->locate(v2)->evaluate(v2);
-      double left = (v2 - v1).length();
-      double leftInc = left / 100.;
-      Vector3 diff = (v2 - v1) / 100.;
-      Vector3 cur = v1 + diff;
-      while(left >= 0.) {
-        double curDist = tree->locate(cur)->evaluate(cur);
-        if(curDist > maxVal) {
-          return false;
-        }
-        //if curDist and atV2 are so negative that distance won't reach above maxVal, return true
-        if(curDist + atV2 + left <= maxVal) {
-          return true;
-        }
-        cur += diff;
-        left -= leftInc;
-      }
-      return true;
+            //faster when v2 is farther inside than v1
+            virtual bool canSee(const Vector3 &v1, const Vector3 &v2) const
+            {
+                const double maxVal = 0.002;
+                double atV2 = tree->locate(v2)->evaluate(v2);
+                double left = (v2 - v1).length();
+                double leftInc = left / 100.;
+                Vector3 diff = (v2 - v1) / 100.;
+                Vector3 cur = v1 + diff;
+                while(left >= 0.) {
+                    double curDist = tree->locate(cur)->evaluate(cur);
+                    if(curDist > maxVal) {
+                        return false;
+                    }
+                    //if curDist and atV2 are so negative that distance won't reach above maxVal, return true
+                    if(curDist + atV2 + left <= maxVal) {
+                        return true;
+                    }
+                    cur += diff;
+                    left -= leftInc;
+                }
+                return true;
+            }
+
+        private:
+            const T *tree;
+    };
+
+    //be sure to delete afterwards
+    template<class T>
+    VisibilityTester *makeVisibilityTester(const T *tree) {
+        return new VisTester<T>(tree);
     }
 
-  private:
-    const T *tree;
-};
+    class AttachmentPrivate;
 
-//be sure to delete afterwards
-template<class T>
-VisibilityTester *makeVisibilityTester(const T *tree) {
-  return new VisTester<T>(tree);
-}
+    class PINOCCHIO_API Attachment {
+        public:
+            Attachment() : a(NULL) {}
+            Attachment(const Attachment &);
+            Attachment(const Mesh &mesh, const Skeleton &skeleton, const std::vector<Vector3> &match, const VisibilityTester *tester, double initialHeatWeight=1.);
 
+            virtual ~Attachment();
 
-class AttachmentPrivate;
-
-class PINOCCHIO_API Attachment {
-  public:
-    Attachment() : a(NULL) {}
-    Attachment(const Attachment &);
-    Attachment(const Mesh &mesh, const Skeleton &skeleton, const std::vector<Vector3> &match, const VisibilityTester *tester, double initialHeatWeight=1.);
-
-    virtual ~Attachment();
-
-    Mesh deform(const Mesh &mesh, const std::vector<Transform<> > &transforms) const;
-    Mesh mixedBlend(const Mesh &mesh, const std::vector<Transform<> > &transforms) const;
-    Mesh linearBlend(const Mesh &mesh, const std::vector<Transform<> > &transforms) const;
-    Mesh dualQuaternion(const Mesh &mesh, const std::vector<Transform<> > &transforms) const;
-    Vector<double, -1> getWeights(int i) const;
-    std::vector<Vector<double, -1> >& getAllWeights();
-  private:
-    AttachmentPrivate *a;
-};
+            Mesh deform(const Mesh &mesh, const std::vector<Transform<> > &transforms) const;
+            Mesh mixedBlend(const Mesh &mesh, const std::vector<Transform<> > &transforms) const;
+            Mesh linearBlend(const Mesh &mesh, const std::vector<Transform<> > &transforms) const;
+            Mesh dualQuaternion(const Mesh &mesh, const std::vector<Transform<> > &transforms) const;
+            Vector<double, -1> getWeights(int i) const;
+            std::vector<Vector<double, -1> >& getAllWeights();
+        private:
+            AttachmentPrivate *a;
+    };
 
 } // namespace Pinocchio
-
 #endif // ATTACHMENT_H_BFCF2002_4190_11E9_AA8F_EFB66606E782

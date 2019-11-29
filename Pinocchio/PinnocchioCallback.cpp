@@ -22,44 +22,44 @@
 
 namespace Pinocchio {
 
-PinnocchioCallBackManager* PinnocchioCallBackManager::_singleton = NULL;
+    PinnocchioCallBackManager* PinnocchioCallBackManager::_singleton = NULL;
 
-PinnocchioCallBackManager* PinnocchioCallBackManager::singletonPtr() {
-  if (!_singleton) {
-    _singleton = new PinnocchioCallBackManager();
-  }
-  return _singleton;
-}
+    PinnocchioCallBackManager* PinnocchioCallBackManager::singletonPtr() {
+        if (!_singleton) {
+            _singleton = new PinnocchioCallBackManager();
+        }
+        return _singleton;
+    }
 
-void PinnocchioCallBackManager::destroy_singleton() {
-  if( _singleton ) {
-    delete _singleton;
-  }
-  _singleton = NULL;
-}
+    void PinnocchioCallBackManager::destroy_singleton() {
+        if( _singleton ) {
+            delete _singleton;
+        }
+        _singleton = NULL;
+    }
 
-PinnocchioCallBackManager& PinnocchioCallBackManager::singleton() {
-  return *singletonPtr();
-}
+    PinnocchioCallBackManager& PinnocchioCallBackManager::singleton() {
+        return *singletonPtr();
+    }
 
-void PinnocchioCallBackManager::setCallBack( PinnocchioCallBack* pinoCallBack ) {
-  callBack = pinoCallBack;
-}
+    void PinnocchioCallBackManager::setCallBack( PinnocchioCallBack* pinoCallBack ) {
+        callBack = pinoCallBack;
+    }
 
-void PinnocchioCallBackManager::runCallBack() {
-  if (callBack)
-    callBack->callbackFunc();
-}
+    void PinnocchioCallBackManager::runCallBack() {
+        if (callBack)
+            callBack->callbackFunc();
+    }
 
-PinnocchioCallBack* PinnocchioCallBackManager::getCallBack() {
-  return callBack;
-}
+    PinnocchioCallBack* PinnocchioCallBackManager::getCallBack() {
+        return callBack;
+    }
 
-PinnocchioCallBackManager::PinnocchioCallBackManager() {
-  callBack = NULL;
-}
+    PinnocchioCallBackManager::PinnocchioCallBackManager() {
+        callBack = NULL;
+    }
 
-PinnocchioCallBackManager::~PinnocchioCallBackManager() {
-}
+    PinnocchioCallBackManager::~PinnocchioCallBackManager() {
+    }
 
-} // namespace Pinocchio
+}                                                           // namespace Pinocchio

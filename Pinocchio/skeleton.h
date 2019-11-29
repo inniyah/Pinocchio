@@ -24,88 +24,87 @@
 
 namespace Pinocchio {
 
-class PINOCCHIO_API Skeleton {
-  public:
-    Skeleton() {}
+    class PINOCCHIO_API Skeleton {
+        public:
+            Skeleton() {}
 
-    const PtGraph &fGraph() const { return fGraphV; }
-    const std::vector<int> &fPrev() const { return fPrevV; }
-    const std::vector<int> &fSym() const { return fSymV; }
+            const PtGraph &fGraph() const { return fGraphV; }
+            const std::vector<int> &fPrev() const { return fPrevV; }
+            const std::vector<int> &fSym() const { return fSymV; }
 
-    const PtGraph &cGraph() const { return cGraphV; }
-    const std::vector<int> &cPrev() const { return cPrevV; }
-    const std::vector<int> &cSym() const { return cSymV; }
-    const std::vector<bool> &cFeet() const { return cFeetV; }
-    const std::vector<bool> &cFat() const { return cFatV; }
+            const PtGraph &cGraph() const { return cGraphV; }
+            const std::vector<int> &cPrev() const { return cPrevV; }
+            const std::vector<int> &cSym() const { return cSymV; }
+            const std::vector<bool> &cFeet() const { return cFeetV; }
+            const std::vector<bool> &cFat() const { return cFatV; }
 
-    const std::vector<int> &cfMap() const { return cfMapV; }
-    const std::vector<int> &fcMap() const { return fcMapV; }
-    const std::vector<double> &fcFraction() const { return fcFractionV; }
-    const std::vector<double> &cLength() const { return cLengthV; }
+            const std::vector<int> &cfMap() const { return cfMapV; }
+            const std::vector<int> &fcMap() const { return fcMapV; }
+            const std::vector<double> &fcFraction() const { return fcFractionV; }
+            const std::vector<double> &cLength() const { return cLengthV; }
 
-    int getJointForName(const std::string &name) const { if(jointNames.count(name)) return jointNames.find(name)->second; return -1; }
+            int getJointForName(const std::string &name) const { if(jointNames.count(name)) return jointNames.find(name)->second; return -1; }
 
-    void scale(double factor);
+            void scale(double factor);
 
-  protected:
-    void initCompressed();
+        protected:
+            void initCompressed();
 
-    // Help for creation
-    std::map<std::string, int> jointNames;
-    void makeJoint(const std::string &name, const Vector3 &pos, const std::string &previous = std::string());
-    void makeSymmetric(const std::string &name1, const std::string &name2);
-    void setFoot(const std::string &name);
-    void setFat(const std::string &name);
+            // Help for creation
+            std::map<std::string, int> jointNames;
+            void makeJoint(const std::string &name, const Vector3 &pos, const std::string &previous = std::string());
+            void makeSymmetric(const std::string &name1, const std::string &name2);
+            void setFoot(const std::string &name);
+            void setFat(const std::string &name);
 
-  private:
-    PtGraph fGraphV; // Full
-    std::vector<int> fPrevV; // Previous vertices
-    std::vector<int> fSymV; // Symmetry
+        private:
+            PtGraph fGraphV;                                // Full
+            std::vector<int> fPrevV;                        // Previous vertices
+            std::vector<int> fSymV;                         // Symmetry
 
-    PtGraph cGraphV; // Compressed (no degree 2 vertices)
-    std::vector<int> cPrevV; // Previous vertices
-    std::vector<int> cSymV; // Symmetry
-    std::vector<bool> cFeetV; // Whether the vertex should be near the ground
-    std::vector<bool> cFatV; // Whether the vertex should be in a large region
+            PtGraph cGraphV;                                // Compressed (no degree 2 vertices)
+            std::vector<int> cPrevV;                        // Previous vertices
+            std::vector<int> cSymV;                         // Symmetry
+            std::vector<bool> cFeetV;                       // Whether the vertex should be near the ground
+            std::vector<bool> cFatV;                        // Whether the vertex should be in a large region
 
-    std::vector<int> cfMapV; // Compressed to full std::map
-    std::vector<int> fcMapV; // Full to compressed std::map, -1 when vertex is not in compressed
-    std::vector<double> fcFractionV; // Maps full vertex number to ratio of its prev edge length to total length of
-                                     //containing edge in the compressed graph
-                                     //lengths of the compressed bones
-    std::vector<double> cLengthV;
-};
+            std::vector<int> cfMapV;                        // Compressed to full std::map
+            std::vector<int> fcMapV;                        // Full to compressed std::map, -1 when vertex is not in compressed
+            std::vector<double> fcFractionV;                // Maps full vertex number to ratio of its prev edge length to total length of
 
-struct PINOCCHIO_API HumanSkeleton : public Skeleton {
-    HumanSkeleton();
-};
+            // Containing edge in the compressed graph lengths of the compressed bones
+            std::vector<double> cLengthV;
+    };
 
-class PINOCCHIO_API SmartBodySkeleton : public Skeleton {
-public:
-    SmartBodySkeleton();
-};
+    struct PINOCCHIO_API HumanSkeleton : public Skeleton {
+        HumanSkeleton();
+    };
 
-class PINOCCHIO_API SmartBodyNewSkeleton : public Skeleton {
-public:
-    SmartBodyNewSkeleton();
-};
+    class PINOCCHIO_API SmartBodySkeleton : public Skeleton {
+        public:
+            SmartBodySkeleton();
+    };
 
-struct PINOCCHIO_API QuadSkeleton : public Skeleton {
-    QuadSkeleton();
-};
+    class PINOCCHIO_API SmartBodyNewSkeleton : public Skeleton {
+        public:
+            SmartBodyNewSkeleton();
+    };
 
-struct PINOCCHIO_API HorseSkeleton : public Skeleton {
-    HorseSkeleton();
-};
+    struct PINOCCHIO_API QuadSkeleton : public Skeleton {
+        QuadSkeleton();
+    };
 
-struct PINOCCHIO_API CentaurSkeleton : public Skeleton {
-    CentaurSkeleton();
-};
+    struct PINOCCHIO_API HorseSkeleton : public Skeleton {
+        HorseSkeleton();
+    };
 
-struct PINOCCHIO_API FileSkeleton : public Skeleton {
-    FileSkeleton(const std::string &filename);
-};
+    struct PINOCCHIO_API CentaurSkeleton : public Skeleton {
+        CentaurSkeleton();
+    };
 
-} // namespace Pinocchio
+    struct PINOCCHIO_API FileSkeleton : public Skeleton {
+        FileSkeleton(const std::string &filename);
+    };
 
+}                                                           // namespace Pinocchio
 #endif // SKELETON_H_BFCF2002_4190_11E9_AA8F_EFB66606E782

@@ -23,63 +23,56 @@
 
 namespace Pinocchio {
 
-bool PtGraph::integrityCheck() const
-{
-  CHECK(verts.size() == edges.size());
-
-  int i, j, k;
-  for(i = 0; i < (int)edges.size(); ++i)
-  {
-    for(j = 0; j < (int)edges[i].size(); ++j)
+    bool PtGraph::integrityCheck() const
     {
-      int cur = edges[i][j];
-      CHECK(cur >= 0);
-      CHECK(cur < (int)edges.size());
-      //no self edges
-      CHECK(cur != i);
+        CHECK(verts.size() == edges.size());
 
-      std::vector<int>::const_iterator it = find(edges[cur].begin(), edges[cur].end(), i);
-      CHECK(it != edges[cur].end());
+        int i, j, k;
+        for(i = 0; i < (int)edges.size(); ++i) {
+            for(j = 0; j < (int)edges[i].size(); ++j) {
+                int cur = edges[i][j];
+                CHECK(cur >= 0);
+                CHECK(cur < (int)edges.size());
+                //no self edges
+                CHECK(cur != i);
 
-      //duplicates
-      for(k = 0; k < j; ++k)
-        CHECK(cur != edges[i][k]);
+                std::vector<int>::const_iterator it = find(edges[cur].begin(), edges[cur].end(), i);
+                CHECK(it != edges[cur].end());
+
+                //duplicates
+                for(k = 0; k < j; ++k)
+                    CHECK(cur != edges[i][k]);
+            }
+        }
+
+        return true;
     }
-  }
 
-  return true;
-}
+    ShortestPather::ShortestPather(const PtGraph &g, int root) {
+        int sz = g.verts.size();
+        std::priority_queue<Inf> todo;
+        std::vector<bool> done(sz, false);
+        prev.resize(sz, -1);
+        dist.resize(sz, -1);
 
+        todo.push(Inf(0., root, -1));
+        while(!todo.empty()) {
+            Inf cur = todo.top();
+            todo.pop();
+            if(done[cur.node])
+                continue;
+            done[cur.node] = true;
+            prev[cur.node] = cur.prev;
+            dist[cur.node] = cur.dist;
 
-ShortestPather::ShortestPather(const PtGraph &g, int root)
-{
-  int sz = g.verts.size();
-  std::priority_queue<Inf> todo;
-  std::vector<bool> done(sz, false);
-  prev.resize(sz, -1);
-  dist.resize(sz, -1);
-
-  todo.push(Inf(0., root, -1));
-  while(!todo.empty())
-  {
-    Inf cur = todo.top();
-    todo.pop();
-    if(done[cur.node])
-      continue;
-    done[cur.node] = true;
-    prev[cur.node] = cur.prev;
-    dist[cur.node] = cur.dist;
-
-    const std::vector<int> &e = g.edges[cur.node];
-    for(int i = 0; i < (int)e.size(); ++i)
-    {
-      if(!done[e[i]])
-      {
-        double dist = cur.dist + (g.verts[cur.node] - g.verts[e[i]]).length();
-        todo.push(Inf(dist, e[i], cur.node));
-      }
+            const std::vector<int> &e = g.edges[cur.node];
+            for(int i = 0; i < (int)e.size(); ++i) {
+                if(!done[e[i]]) {
+                    double dist = cur.dist + (g.verts[cur.node] - g.verts[e[i]]).length();
+                    todo.push(Inf(dist, e[i], cur.node));
+                }
+            }
+        }
     }
-  }
-}
 
-} // namespace Pinocchio
+}                                                           // namespace Pinocchio

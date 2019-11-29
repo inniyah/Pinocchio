@@ -27,59 +27,58 @@
 
 namespace Pinocchio {
 
-struct MeshVertex {
-  MeshVertex() : edge(-1) {}
+    struct MeshVertex {
+        MeshVertex() : edge(-1) {}
 
-  Vector3 pos;
-  Vector3 normal;
-  Vector3 texture;
-  int edge; // An edge such that edge->prev->vertex is this
-};
+        Vector3 pos;
+        Vector3 normal;
+        Vector3 texture;
+        int edge;                                           // An edge such that edge->prev->vertex is this
+    };
 
-struct MeshEdge {
-  MeshEdge() : vertex(-1), prev(-1), twin(-1) {}
+    struct MeshEdge {
+        MeshEdge() : vertex(-1), prev(-1), twin(-1) {}
 
-  int vertex; // The vertex the edge points to--the start vertex is prev->vertex
-  int tvertex;
-  int prev; // CCW, next is prev->prev
-  int twin;
-};
+        int vertex;                                         // The vertex the edge points to--the start vertex is prev->vertex
+        int tvertex;
+        int prev;                                           // CCW, next is prev->prev
+        int twin;
+    };
 
-class PINOCCHIO_API Mesh {
-  public:
-    Mesh() : scale(1.) {}
-    Mesh(const std::string &file, int algo=Mesh::LBS, float weight=1.);
+    class PINOCCHIO_API Mesh {
+        public:
+            Mesh() : scale(1.) {}
+            Mesh(const std::string &file, int algo=Mesh::LBS, float weight=1.);
 
-    bool integrityCheck() const;
-    bool isConnected() const; // Returns true if the mesh consists of a single connected component
-    void computeVertexNormals();
-    void normalizeBoundingBox();
-    void computeTopology();
-    void writeObj(const std::string &filename) const;
+            bool integrityCheck() const;
+            bool isConnected() const;                       // Returns true if the mesh consists of a single connected component
+            void computeVertexNormals();
+            void normalizeBoundingBox();
+            void computeTopology();
+            void writeObj(const std::string &filename) const;
 
-  private:
-    void readObj(std::istream &strm);
-    void readOff(std::istream &strm);
-    void readPly(std::istream &strm);
-    void readGts(std::istream &strm);
-    void readStl(std::istream &strm);
-    void fixDupFaces();
-    void sortEdges(); // Sort edges so that triplets forming faces are adjacent
+        private:
+            void readObj(std::istream &strm);
+            void readOff(std::istream &strm);
+            void readPly(std::istream &strm);
+            void readGts(std::istream &strm);
+            void readStl(std::istream &strm);
+            void fixDupFaces();
+            void sortEdges();                               // Sort edges so that triplets forming faces are adjacent
 
-  public:
-    std::vector<MeshVertex> vertices;
-    std::vector<MeshEdge> edges; // Half-Edges, really
+        public:
+            std::vector<MeshVertex> vertices;
+            std::vector<MeshEdge> edges;                    // Half-Edges, really
 
-    Vector3 toAdd;
-    double scale;
-    bool withTexture;
-    float blendWeight;
-    int algo;
-    static int LBS;
-    static int DQS;
-    static int MIX;
-};
+            Vector3 toAdd;
+            double scale;
+            bool withTexture;
+            float blendWeight;
+            int algo;
+            static int LBS;
+            static int DQS;
+            static int MIX;
+    };
 
 } // namespace Pinocchio
-
 #endif // MESH_H_BFCF2002_4190_11E9_AA8F_EFB66606E782

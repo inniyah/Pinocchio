@@ -24,30 +24,29 @@
 
 namespace Pinocchio {
 
-class PINOCCHIO_API Intersector {
-  public:
-    Intersector() : mesh(NULL) {}
-    Intersector(const Mesh &m, const Vector3 &inDir) : mesh(&m), dir(inDir) { init(); }
+    class PINOCCHIO_API Intersector {
+        public:
+            Intersector() : mesh(NULL) {}
+            Intersector(const Mesh &m, const Vector3 &inDir) : mesh(&m), dir(inDir) { init(); }
 
-    std::vector<Vector3> intersect(const Vector3 &pt, std::vector<int> *outIndices = NULL) const;
-    const Vector3 &getDir() const { return dir; }
-  private:
-    void init();
-    void getIndex(const Vector2 &pt, int &x, int &y) const;
+            std::vector<Vector3> intersect(const Vector3 &pt, std::vector<int> *outIndices = NULL) const;
+            const Vector3 &getDir() const { return dir; }
+        private:
+            void init();
+            void getIndex(const Vector2 &pt, int &x, int &y) const;
 
-    const Mesh *mesh;
-    Vector3 dir;
-    //basis
-    Vector3 v1, v2;
-    //within the basis
-    Rect2 bounds;
+            const Mesh *mesh;
+            Vector3 dir;
+            //basis
+            Vector3 v1, v2;
+            //within the basis
+            Rect2 bounds;
 
-    std::vector<Vector2> points;
-    //they are scaled for intersection
-    std::vector<Vector3> sNormals;
-    std::vector<std::vector<int> > triangles;
-};
+            std::vector<Vector2> points;
+            //they are scaled for intersection
+            std::vector<Vector3> sNormals;
+            std::vector<std::vector<int> > triangles;
+    };
 
 } // namespace Pinocchio
-
 #endif // INTERSECTOR_H_BFCF2002_4190_11E9_AA8F_EFB66606E782
