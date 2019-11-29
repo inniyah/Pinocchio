@@ -38,7 +38,7 @@ int Mesh::DQS = 1;
 int Mesh::MIX = 2;
 
 Mesh::Mesh(const std::string &file, int algo, float weight)
-: scale(1.), blendWeight(weight), algo(algo)
+: scale(1.), withTexture(false), blendWeight(weight), algo(algo)
 {
   int i;
   #define OUT { vertices.clear(); edges.clear(); return; }
@@ -267,9 +267,10 @@ void Mesh::readObj(std::istream &strm)
     //deal with the line based on the first word
     if (words[0] == "vt") { // texture coordinates
         double tx, ty;
+        withTexture = true;
         sscanf(words[1].c_str(), "%lf", &tx);
         sscanf(words[2].c_str(), "%lf", &ty);
-        texCoords.push_back(Vector3(tx,ty,0.0));
+        vertices.back().texture = Vector3(tx, ty, 0.0);
 
     } else if (words[0] == "vn") { // vertex normal
         if (words.size() != 4) {
@@ -427,12 +428,26 @@ void Mesh::readPly(std::istream &strm)
       }
 
       double x, y, z;
-      sscanf(words[0].c_str(), "%lf", &x);
-      sscanf(words[1].c_str(), "%lf", &y);
-      sscanf(words[2].c_str(), "%lf", &z);
-
-      vertices.resize(vertices.size() + 1);
-      vertices.back().pos = Vector3(-z, x, -y);
+      int t1, t2, t3, t4;
+      if(words.size() <= 6) {
+        sscanf(words[0].c_str(), "%lf", &x);
+        sscanf(words[1].c_str(), "%lf", &y);
+        sscanf(words[2].c_str(), "%lf", &z);
+        vertices.resize(vertices.size() + 1);
+        vertices.back().pos = Vector3(-z, x, -y);
+      } else if (words.size() == 7) {
+        withTexture = true;
+        sscanf(words[0].c_str(), "%lf", &x);
+        sscanf(words[1].c_str(), "%lf", &y);
+        sscanf(words[2].c_str(), "%lf", &z);
+        sscanf(words[3].c_str(), "%i", &t1);
+        sscanf(words[4].c_str(), "%i", &t2);
+        sscanf(words[5].c_str(), "%i", &t3);
+        sscanf(words[6].c_str(), "%i", &t4);
+        vertices.resize(vertices.size() + 1);
+        vertices.back().pos = Vector3(-z, x, -y);
+        vertices.back().texture = Vector3(t1, t2, t3);
+      }
       continue;
     }
 
@@ -605,14 +620,15 @@ void Mesh::readGts(std::istream &strm)
     for(i = 0; i < 3; ++i) {
       int ni = (i + 1) % 3;
 
-      if(fedges[a[i]].first == fedges[a[ni]].first)
+      if(fedges[a[i]].first == fedges[a[ni]].first) {
         edges[first + i].vertex = fedges[a[i]].first;
-      else if(fedges[a[i]].first == fedges[a[ni]].second)
+      } else if(fedges[a[i]].first == fedges[a[ni]].second) {
         edges[first + i].vertex = fedges[a[i]].first;
-      else if(fedges[a[i]].second == fedges[a[ni]].first)
+      } else if(fedges[a[i]].second == fedges[a[ni]].first) {
         edges[first + i].vertex = fedges[a[i]].second;
-      else if(fedges[a[i]].second == fedges[a[ni]].second)
+      } else if(fedges[a[i]].second == fedges[a[ni]].second) {
         edges[first + i].vertex = fedges[a[i]].second;
+      }
     }
 
     //otherwise continue -- unrecognized line
@@ -792,14 +808,10 @@ bool Mesh::integrityCheck() const
 
   //check basic edge and vertex relationships
   for(i = 0; i < es; ++i) {
-    //no loops
-    CHECK(edges[i].prev != i);
-    //we have only triangles
-    CHECK(edges[edges[edges[i].prev].prev].prev == i);
-    //no self twins
-    CHECK(edges[i].twin != i);
-    //twins are valid
-    CHECK(edges[edges[i].twin].twin == i);
+    CHECK(edges[i].prev != i); //no loops
+    CHECK(edges[edges[edges[i].prev].prev].prev == i); //we have only triangles
+    CHECK(edges[i].twin != i); //no self twins
+    CHECK(edges[edges[i].twin].twin == i); //twins are valid
 
     //twin's vertex and prev's vertex should be the same
     CHECK(edges[edges[i].twin].vertex == edges[edges[i].prev].vertex);

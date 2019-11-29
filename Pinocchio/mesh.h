@@ -32,6 +32,7 @@ struct MeshVertex {
 
   Vector3 pos;
   Vector3 normal;
+  Vector3 texture;
   int edge; // An edge such that edge->prev->vertex is this
 };
 
@@ -68,10 +69,10 @@ class PINOCCHIO_API Mesh {
   public:
     std::vector<MeshVertex> vertices;
     std::vector<MeshEdge> edges; // Half-Edges, really
-    std::vector<Vector3> texCoords;
 
     Vector3 toAdd;
     double scale;
+    bool withTexture;
     float blendWeight;
     int algo;
     static int LBS;
