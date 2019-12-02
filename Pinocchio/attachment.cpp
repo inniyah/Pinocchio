@@ -29,8 +29,7 @@ namespace Pinocchio {
         public:
             AttachmentPrivate() {}
             virtual ~AttachmentPrivate() {}
-            virtual Mesh deform(const Mesh &mesh,
-                const std::vector<Transform<> > &transforms) const = 0;
+            virtual Mesh deform(const Mesh &mesh, const std::vector<Transform<> > &transforms, AlgoType algo) const = 0;
             virtual Vector<double, -1> getWeights(int i) const = 0;
             virtual AttachmentPrivate *clone() const = 0;
     };
@@ -48,8 +47,7 @@ namespace Pinocchio {
         return v.normalize() * vertexNormal(ns) > 0.5;
     }
 
-    class AttachmentPrivate1 : public AttachmentPrivate
-    {
+    class AttachmentPrivate1 : public AttachmentPrivate {
         public:
             AttachmentPrivate1() {}
 
@@ -219,17 +217,16 @@ namespace Pinocchio {
              * use as the skinning algorithm. The options are linear blend
              * skinning, dual quaternion skinning, or a mixed result.
              */
-            Mesh deform(const Mesh &mesh, const std::vector<Transform<> > &transforms)
-                const
-            {
+            Mesh deform(const Mesh &mesh, const std::vector<Transform<> > &transforms, AlgoType algo) const {
                 Mesh out;
 
-                if (mesh.algo == Mesh::DQS)
+                if (algo == DQS) {
                     out = dualQuaternion(mesh, transforms);
-                else if (mesh.algo == Mesh::LBS)
+                } else if (algo == LBS) {
                     out = linearBlend(mesh, transforms);
-                else if (mesh.algo == Mesh::MIX)
+                } else if (algo == MIX) {
                     out = mixedBlend(mesh, transforms);
+                }
 
                 out.computeVertexNormals();
                 return out;
@@ -243,10 +240,7 @@ namespace Pinocchio {
              *  if the blending weight is 0.2, then 20% of the linear blend result
              *  will be used, while 80% of the dual quaternion result will be used.
              */
-            Mesh mixedBlend(const Mesh &mesh,
-                const std::vector<Transform<> > &transforms)
-                const
-            {
+            Mesh mixedBlend(const Mesh &mesh, const std::vector<Transform<> > &transforms) const {
                 Mesh out = mesh;
                 Tbx::Dual_quat_cu dquat_blend = Tbx::Dual_quat_cu::identity();
                 int i, nv = mesh.vertices.size();
@@ -307,9 +301,7 @@ namespace Pinocchio {
              * skinning. This was the original code used in Pinocchio before
              * our adjustments.
              */
-            Mesh linearBlend(const Mesh &mesh, const std::vector<Transform<> > &transforms)
-                const
-            {
+            Mesh linearBlend(const Mesh &mesh, const std::vector<Transform<> > &transforms) const {
                 Mesh out = mesh;
                 int i, nv = mesh.vertices.size();
 
@@ -341,10 +333,7 @@ namespace Pinocchio {
              * We used the functions from the skinning library by Rodolphe
              * Vaillant-David.
              */
-            Mesh dualQuaternion(const Mesh &mesh,
-                const std::vector<Transform<> > &transforms)
-                const
-            {
+            Mesh dualQuaternion(const Mesh &mesh, const std::vector<Transform<> > &transforms) const {
                 Mesh out = mesh;
                 Tbx::Dual_quat_cu dquat_blend = Tbx::Dual_quat_cu::identity();
                 int i, nv = mesh.vertices.size();
@@ -398,8 +387,7 @@ namespace Pinocchio {
 
             std::vector<Vector<double, -1> >& getAllWeights() { return weights; }
 
-            AttachmentPrivate *clone() const
-            {
+            AttachmentPrivate *clone() const {
                 AttachmentPrivate1 *out = new AttachmentPrivate1();
                 *out = *this;
                 return out;
@@ -412,23 +400,21 @@ namespace Pinocchio {
     };
 
     Attachment::~Attachment() {
-        if(a)
+        if (a) {
             delete a;
+        }
     }
 
     Attachment::Attachment(const Attachment &att) {
         a = att.a->clone();
     }
 
-    Vector<double, -1> Attachment::getWeights(int i) const
-    {
+    Vector<double, -1> Attachment::getWeights(int i) const {
         return a->getWeights(i);
     }
 
-    Mesh Attachment::deform(const Mesh &mesh,
-        const std::vector<Transform<> > &transforms) const
-    {
-        return a->deform(mesh, transforms);
+    Mesh Attachment::deform(const Mesh &mesh, const std::vector<Transform<> > &transforms, AlgoType algo) const {
+        return a->deform(mesh, transforms, algo);
     }
 
     Attachment::Attachment(const Mesh &mesh, const Skeleton &skeleton,

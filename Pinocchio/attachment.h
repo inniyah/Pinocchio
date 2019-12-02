@@ -25,6 +25,11 @@
 #include "quatinterface.h"
 
 namespace Pinocchio {
+    typedef enum { // Skinning algorithms available
+        LBS, // Transformation Matrices: default skinning algorithm
+        DQS, // Dual Quaternion Skinning
+        MIX, // Mix of both LBS and DQS algorithms
+    } AlgoType;
 
     class VisibilityTester {
         public:
@@ -81,7 +86,7 @@ namespace Pinocchio {
 
             virtual ~Attachment();
 
-            Mesh deform(const Mesh &mesh, const std::vector<Transform<> > &transforms) const;
+            Mesh deform(const Mesh &mesh, const std::vector<Transform<> > &transforms, AlgoType algo) const;
             Mesh mixedBlend(const Mesh &mesh, const std::vector<Transform<> > &transforms) const;
             Mesh linearBlend(const Mesh &mesh, const std::vector<Transform<> > &transforms) const;
             Mesh dualQuaternion(const Mesh &mesh, const std::vector<Transform<> > &transforms) const;

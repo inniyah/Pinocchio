@@ -48,7 +48,7 @@ namespace Pinocchio {
     class PINOCCHIO_API Mesh {
         public:
             Mesh() : scale(1.) {}
-            Mesh(const std::string &file, int algo=Mesh::LBS, float weight=1.);
+            Mesh(const std::string &file, float weight=1.);
 
             bool integrityCheck() const;
             bool isConnected() const;                       // Returns true if the mesh consists of a single connected component
@@ -74,10 +74,6 @@ namespace Pinocchio {
             double scale;
             bool withTexture;
             float blendWeight;
-            int algo;
-            static int LBS;
-            static int DQS;
-            static int MIX;
     };
 
 } // namespace Pinocchio

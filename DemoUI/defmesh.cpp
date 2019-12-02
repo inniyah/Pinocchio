@@ -26,22 +26,18 @@ THE SOFTWARE.
 
 using namespace Pinocchio;
 
-std::vector<Transform<> > DefMesh::computeTransforms() const
-{
+std::vector<Transform<> > DefMesh::computeTransforms() const {
   std::vector<Transform<> > out;
   int i;
 
-  if(motion)
-  {
+  if(motion) {
     std::vector<Transform<> > ts;
     ts = motion->get();
 
     double legRatio = getLegRatio();
     Vector3 trans = ts[0].getTrans() * legRatio;
 
-    for(int times = 0; times < 2; ++times)
-    {
-
+    for(int times = 0; times < 2; ++times) {
       if(times == 1)
         trans += (out[0] * match[0] - out[1] * match[2]);
 
@@ -65,8 +61,7 @@ std::vector<Transform<> > DefMesh::computeTransforms() const
 
   out.push_back(Transform<>(Vector3(0.5, 0, 0.5)));
 
-  for(i = 1; i < (int)origSkel.fPrev().size(); ++i)
-  {
+  for(i = 1; i < (int)origSkel.fPrev().size(); ++i) {
     int prevV = origSkel.fPrev()[i];
     Transform<> cur = out[prevV];
     cur = cur * Transform<>(match[prevV]) * Transform<>(transforms[i - 1]) * Transform<>(-match[prevV]);
@@ -81,14 +76,11 @@ std::vector<Transform<> > DefMesh::computeTransforms() const
 
 bool reallyDeform = true;
 
-void DefMesh::updateMesh(int &framenum) const
-{
+void DefMesh::updateMesh(int &framenum) const {
   std::vector<Transform<> > t = computeTransforms();
 
-  if(motion)
-  {
-    if(footOffsets.empty())
-    {
+  if(motion) {
+    if(footOffsets.empty()) {
       Intersector s(origMesh, Vector3(0, 1, 0));
 
       std::vector<Vector3> sects;
@@ -141,13 +133,13 @@ void DefMesh::updateMesh(int &framenum) const
     #endif
 
     filter.step(t, feet);
-    if(reallyDeform)
-      curMesh = attachment.deform(origMesh, filter.getTransforms());
+    if (reallyDeform) {
+      curMesh = attachment.deform(origMesh, filter.getTransforms(), skinAlgo);
+    }
 
     #if 0
     static int period = 1;
-    if(--period == 0)
-    {
+    if(--period == 0) {
       period = 3;
       if(rand() % 40 == 0)
         Debugging::clear();
@@ -156,9 +148,9 @@ void DefMesh::updateMesh(int &framenum) const
       Debugging::drawGraph(skelGraph, QPen(Qt::red, 5));
     }
     #endif
+  } else {
+    curMesh = attachment.deform(origMesh, t, skinAlgo);
   }
-  else
-    curMesh = attachment.deform(origMesh, t);
 }
 
 

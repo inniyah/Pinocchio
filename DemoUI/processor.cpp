@@ -51,7 +51,7 @@ struct ArgData {
   Skeleton skeleton;
   std::string skeletonname;
   // Indicates which skinning algorithm to use
-  int skinAlgorithm;
+  Pinocchio::AlgoType skinAlgorithm;
   // Indicates the blending weight for MIX algorithm
   float blendWeight;
 };
@@ -68,8 +68,7 @@ void printUsageAndExit() {
 }
 
 
-ArgData processArgs(const std::vector<std::string> &args)
-{
+ArgData processArgs(const std::vector<std::string> &args) {
   ArgData out;
   int cur = 2;
   int num = args.size();
@@ -79,36 +78,31 @@ ArgData processArgs(const std::vector<std::string> &args)
   out.filename = args[1];
   // set default skinning algorithm as LBS, and the default blending weight
   // as 0.5
-  out.skinAlgorithm = Mesh::LBS;
+  out.skinAlgorithm = Pinocchio::LBS;
   out.blendWeight = 0.5;
 
-  while(cur < num)
-  {
+  while(cur < num) {
     std::string curStr = args[cur++];
-    if(curStr == std::string("-skel"))
-    {
-      if(cur == num)
-      {
+    if(curStr == std::string("-skel")) {
+      if(cur == num) {
         std::cout << "No skeleton specified; ignoring." << std::endl;
         continue;
       }
       curStr = args[cur++];
-      if(curStr == std::string("human"))
+      if (curStr == std::string("human")) {
         out.skeleton = HumanSkeleton();
-      else if(curStr == std::string("horse"))
+      } else if(curStr == std::string("horse")) {
         out.skeleton = HorseSkeleton();
-      else if(curStr == std::string("quad"))
+      } else if(curStr == std::string("quad")) {
         out.skeleton = QuadSkeleton();
-      else if(curStr == std::string("centaur"))
+      } else if(curStr == std::string("centaur")) {
         out.skeleton = CentaurSkeleton();
-      else
+      } else {
         out.skeleton = FileSkeleton(curStr);
+      }
       out.skeletonname = curStr;
-    }
-    else if(curStr == std::string("-rot"))
-    {
-      if(cur + 3 >= num)
-      {
+    } else if(curStr == std::string("-rot")) {
+      if(cur + 3 >= num) {
         std::cout << "Too few rotation arguments; exiting." << std::endl;
         printUsageAndExit();
       }
@@ -119,67 +113,47 @@ ArgData processArgs(const std::vector<std::string> &args)
       sscanf(args[cur++].c_str(), "%lf", &deg);
 
       out.meshTransform = Quaternion<>(Vector3(x, y, z), deg * M_PI / 180.) * out.meshTransform;
-    }
-    else if(curStr == std::string("-scale"))
-    {
-      if(cur >= num)
-      {
+    } else if(curStr == std::string("-scale")) {
+      if(cur >= num) {
         std::cout << "No scale provided; exiting." << std::endl;
         printUsageAndExit();
       }
       sscanf(args[cur++].c_str(), "%lf", &out.skelScale);
-    }
-    else if(curStr == std::string("-meshonly") || curStr == std::string("-mo"))
-    {
+    } else if(curStr == std::string("-meshonly") || curStr == std::string("-mo")) {
       out.stopAtMesh = true;
-    }
-    else if(curStr == std::string("-circlesonly") || curStr == std::string("-co"))
-    {
+    } else if(curStr == std::string("-circlesonly") || curStr == std::string("-co")) {
       out.stopAfterCircles = true;
-    }
-    else if (curStr == std::string("-nofit"))
-    {
+    } else if (curStr == std::string("-nofit")) {
       out.noFit = true;
-    }
-    else if(curStr == std::string("-motion"))
-    {
-      if(cur == num)
-      {
+    } else if(curStr == std::string("-motion")) {
+      if(cur == num) {
         std::cout << "No motion filename specified; ignoring." << std::endl;
         continue;
       }
       out.motionname = args[cur++];
-    }
-    else if (curStr == std::string("-algo"))
-    {
+    } else if (curStr == std::string("-algo")) {
       /*  Option to use a different skinning algorithm than the
        *  default LBS. Currently, options are LBS, DQS, and MIX */
       std::string algo = args[cur++];
-      if (algo == std::string("LBS"))
-        out.skinAlgorithm = Mesh::LBS;
-      else if (algo == std::string("DQS"))
-        out.skinAlgorithm = Mesh::DQS;
-      else if (algo == std::string("MIX"))
-      {
+      if (algo == std::string("LBS")) {
+        out.skinAlgorithm = Pinocchio::LBS;
+      } else if (algo == std::string("DQS")) {
+        out.skinAlgorithm = Pinocchio::DQS;
+      } else if (algo == std::string("MIX")) {
         /*  Grab the desired blending weight for LBS, i.e
          *  how much of the result of LBS you want to see */
-        if(cur >= num)
-        {
+        if(cur >= num) {
           std::cout << "No blending weight given; exiting." << std::endl;
           std::cout << args[cur] << std::endl;
           printUsageAndExit();
         }
-        out.skinAlgorithm = Mesh::MIX;
+        out.skinAlgorithm = Pinocchio::MIX;
         sscanf(args[cur++].c_str(), "%f", &out.blendWeight);
-      }
-      else
-      {
+      } else {
         std::cout << "Unrecognized skinning algorithm" << std::endl;
         printUsageAndExit();
       }
-    }
-    else
-    {
+    } else {
       std::cout << "Unrecognized option: " << curStr << std::endl;
       printUsageAndExit();
     }
@@ -189,45 +163,38 @@ ArgData processArgs(const std::vector<std::string> &args)
 }
 
 
-void process(const std::vector<std::string> &args, MyWindow *w)
-{
+void process(const std::vector<std::string> &args, MyWindow *w) {
   int i;
   ArgData a = processArgs(args);
 
   Debugging::setOutStream(std::cout);
 
-  Mesh m(a.filename, a.skinAlgorithm, a.blendWeight);
-  if(m.vertices.size() == 0)
-  {
+  Mesh m(a.filename, a.blendWeight);
+  if(m.vertices.size() == 0) {
     std::cout << "Error reading file.  Aborting." << std::endl;
     exit(0);
     return;
   }
 
-  for(i = 0; i < (int)m.vertices.size(); ++i)
+  for(i = 0; i < (int)m.vertices.size(); ++i) {
     m.vertices[i].pos = a.meshTransform * m.vertices[i].pos;
+  }
   m.normalizeBoundingBox();
   m.computeVertexNormals();
 
   Skeleton given = a.skeleton;
   given.scale(a.skelScale * 0.7);
 
-  //if early bailout
-  if(a.stopAtMesh)
-  {
+  if (a.stopAtMesh) { //if early bailout
     w->addMesh(new StaticDisplayMesh(m));
     return;
   }
 
   PinocchioOutput o;
   //do everything
-  if(!a.noFit)
-  {
+  if (!a.noFit) {
     o = autorig(given, m);
-  }
-  //skip the fitting step--assume the skeleton is already correct for the mesh
-  else
-  {
+  } else { //skip the fitting step--assume the skeleton is already correct for the mesh
     TreeType *distanceField = constructDistanceField(m);
     VisTester<TreeType> *tester = new VisTester<TreeType>(distanceField);
 
@@ -241,23 +208,17 @@ void process(const std::vector<std::string> &args, MyWindow *w)
     delete distanceField;
   }
 
-  if(o.embedding.size() == 0)
-  {
+  if(o.embedding.size() == 0) {
     std::cout << "Error embedding" << std::endl;
     exit(0);
   }
 
-  if(a.motionname.size() > 0)
-  {
-    w->addMesh(new DefMesh(m, given, o.embedding, *(o.attachment),
-      new Motion(a.motionname)));
-  }
-  else
-  {
+  if(a.motionname.size() > 0) {
+    w->addMesh(new DefMesh(m, given, o.embedding, *(o.attachment), new Motion(a.motionname), a.skinAlgorithm));
+  } else {
     w->addMesh(new StaticDisplayMesh(m));
 
-    for(i = 1; i < (int)o.embedding.size(); ++i)
-    {
+    for(i = 1; i < (int)o.embedding.size(); ++i) {
       w->addLine(LineSegment(o.embedding[i], o.embedding[given.fPrev()[i]], Vector3(.5, .5, 0), 4.));
     }
   }
