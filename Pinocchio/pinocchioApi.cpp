@@ -83,7 +83,7 @@ namespace Pinocchio {
         float w1,w2,w3;
         Vector3 ptToV1 = tri.v1 - pt;
         Vector3 ptToV2 = tri.v2 - pt;
-        Vector3 ptToV3 = tri.v2 - pt;
+        Vector3 ptToV3 = tri.v3 - pt;
         Vector3 cross1 = ptToV1%ptToV2;
         double area1 = cross1.length();
         Vector3 cross2 = ptToV2%ptToV3;

@@ -117,7 +117,7 @@ namespace Pinocchio {
                 prevErr = curErr;
             }
             else {
-                if(count > 2) {
+                if(count > 1) { // always undo a step that made things worse (was "count > 2")
                     for(i = 0; i < (int)fineEmbedding.size(); ++i) {
                         fineEmbedding[i] -= dir[i] * step;
                     }
@@ -179,9 +179,10 @@ namespace Pinocchio {
                         varNum = 3;
 
                     if(varNum >= 0) {
-                        dMatch[i][0] *= DType(1, varNum + 0);
-                        dMatch[i][1] *= DType(1, varNum + 1);
-                        dMatch[i][2] *= DType(1, varNum + 2);
+                        // Used to be dMatch *= DType(1, var), which scaled the derivative by the value
+                        dMatch[i][0] = DType(fineEmbedding[i][0], varNum + 0);
+                        dMatch[i][1] = DType(fineEmbedding[i][1], varNum + 1);
+                        dMatch[i][2] = DType(fineEmbedding[i][2], varNum + 2);
                     }
                 }
 

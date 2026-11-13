@@ -42,7 +42,7 @@ namespace Pinocchio {
 
     struct Tri3Object
     {
-        Tri3Object() {}
+        Tri3Object() : triIdx(-1) {}
         Tri3Object(const Vector3 &inV1, const Vector3 &inV2, const Vector3 &inV3, int idx = 0) : v1(inV1), v2(inV2), v3(inV3), triIdx(idx) {}
 
         Rect3 boundingRect() const { return Rect3(v1) | Rect3(v2) | Rect3(v3); }

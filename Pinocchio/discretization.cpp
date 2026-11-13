@@ -27,6 +27,15 @@ namespace Pinocchio {
     Mesh  prepareMesh(const Mesh &m) {
         Mesh out = m;
 
+        // Only connectivity used to be checked. With an open or non-manifold mesh
+        // (edges without a twin, twin == -1), isConnected() and the weight
+        // computation walk vertex rings through index -1: hang or crash.
+        if(m.vertices.empty() || !m.integrityCheck()) {
+            Debugging::out() <<
+                "Bad mesh: must be closed, manifold and consistently oriented" << std::endl;
+            return Mesh();
+        }
+
         if(!m.isConnected()) {
             Debugging::out() <<
                 "Bad mesh: should be a single connected component" << std::endl;
@@ -175,7 +184,7 @@ namespace Pinocchio {
                 continue;
 
             out.push_back(samples[i]);
-            if((int)out.size() > maxSpheres)
+            if((int)out.size() >= maxSpheres)   // used to return maxSpheres + 1
                 break;
         }
 

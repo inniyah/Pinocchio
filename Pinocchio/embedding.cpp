@@ -169,6 +169,13 @@ namespace Pinocchio {
                     Debugging::out() << "Reached " << todo.size() << std::endl;
             }
 
+            // Without a limit, a template that does not fit (or a bad joint
+            // order) exhausted memory before giving up.
+            if(todo.size() > 2000000) {
+                Debugging::out() << "Search aborted: too many partial matches" << std::endl;
+                break;
+            }
+
             if(idx == toMatch) {
                 output = cur;
                 Debugging::out() << "Found: residual = " << cur.penalty << std::endl;
@@ -278,14 +285,20 @@ namespace Pinocchio {
     const Skeleton &skeleton) {
         FP fp(graph, skeleton, std::vector<Sphere>());
 
-        std::vector<Vector3> out;
-
-        out.push_back(graph.verts[discreteEmbedding[0]]);
+        // Points used to be concatenated in insertion order and the result used
+        // as if it were indexed by joint: only correct if the skeleton happened
+        // to be declared in that particular order.
+        std::vector<Vector3> out(skeleton.fPrev().size());
+        out[skeleton.cfMap()[0]] = graph.verts[discreteEmbedding[0]];
         for(int i = 1; i < (int)discreteEmbedding.size(); ++i) {
             int prev = skeleton.cPrev()[i];
 
             std::vector<Vector3> pathPts = splitPath(&fp, i, discreteEmbedding[i], discreteEmbedding[prev]);
-            out.insert(out.end(), pathPts.begin() + 1, pathPts.end());
+            int joint = skeleton.cfMap()[i];
+            for(int k = (int)pathPts.size() - 1; k >= 1; --k) {   // from the end of the chain towards the parent
+                out[joint] = pathPts[k];
+                joint = skeleton.fPrev()[joint];
+            }
         }
 
         return out;
