@@ -100,6 +100,6 @@ depend: .depend
 	$(RM) ./.depend
 	$(CXX) $(CFLAGS) -MM $^>>./.depend;
 
-include .depend
+-include .depend
 
 .PHONY: all depend clean distclean cleanall

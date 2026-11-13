@@ -4,10 +4,11 @@ dirs = Pinocchio AttachWeights DemoUI
 
 # Define a standard makePerDir command, which goes into
 # each dir, and runs make $(makerule)
+# Stops at the first directory that fails (it used to carry on and hide the error)
 define makePerDir
 for dir in $(dirs); \
 do \
-	cd $$dir && { $(MAKE) $(makerule); cd ..; }; \
+	$(MAKE) -C $$dir $(makerule) || exit 1; \
 done
 endef
 

@@ -42,32 +42,69 @@ template<class T> T CUBE(const T & x) { return x * x * x; }
 template<class T> T QUAD(const T & x) { return SQR(SQR(x)); }
 
 template <class T>
-class maximum : public std::binary_function<T, T, T> {
+class maximum {
     public:
+        typedef T first_argument_type;
+        typedef T second_argument_type;
+        typedef T result_type;
         T operator()(const T &a1, const T &a2) const { return std::max(a1, a2); }
 };
 
 template <class T>
-class minimum : public std::binary_function<T, T, T> {
+class minimum {
     public:
+        typedef T first_argument_type;
+        typedef T second_argument_type;
+        typedef T result_type;
         T operator()(const T &a1, const T &a2) const { return std::min(a1, a2); }
 };
 
 template <class A1, class A2, class R>
-class myMult : public std::binary_function<A1, A2, R> {
+class myMult {
     public:
+        typedef A1 first_argument_type;
+        typedef A2 second_argument_type;
+        typedef R result_type;
         R operator()(const A1 &a1, const A2 &a2) const { return a1 * a2; }
 };
 
 template <class A1, class A2, class R>
-class myDiv : public std::binary_function<A1, A2, R> {
+class myDiv {
     public:
+        typedef A1 first_argument_type;
+        typedef A2 second_argument_type;
+        typedef R result_type;
         R operator()(const A1 &a1, const A2 &a2) const { return a1 / a2; }
 };
 
-template <class T>
-class ident : public std::unary_function<T, T> {
+// Replacements for std::bind2nd(op, x), deprecated in C++11 and removed in C++17.
+// They expose result_type because Vector::apply needs it, without relying on the
+// typedefs of std::plus & co. (also removed in C++20).
+template <class Op> struct opResult { typedef typename Op::result_type type; };
+template <class R> struct opResult<std::plus<R> > { typedef R type; };
+template <class R> struct opResult<std::minus<R> > { typedef R type; };
+template <class R> struct opResult<std::multiplies<R> > { typedef R type; };
+template <class R> struct opResult<std::divides<R> > { typedef R type; };
+
+template <class Op, class T>
+class bindSecond {
     public:
+        typedef typename opResult<Op>::type result_type;
+        bindSecond(const Op &op, const T &v) : op_(op), v_(v) {}
+        template <class A> result_type operator()(const A &a) const { return op_(a, v_); }
+    private:
+        Op op_;
+        T v_;
+};
+
+template <class Op, class T>
+bindSecond<Op, T> bind2ndCompat(const Op &op, const T &v) { return bindSecond<Op, T>(op, v); }
+
+template <class T>
+class ident {
+    public:
+        typedef T argument_type;
+        typedef T result_type;
         T operator()(const T &v) const { return v; }
 };
 

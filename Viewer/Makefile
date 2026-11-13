@@ -67,7 +67,7 @@ bcpp:
 		dos2unix "$${FILE}" ; \
 	done
 
-include .depend
+-include .depend
 
 .PHONY: all depend clean distclean cleanall
 

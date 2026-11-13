@@ -1,0 +1,6 @@
+/* Version script used when linking libpinocchio.so (referenced by the
+   Makefile but missing from the repository, which broke the shared build).
+   Every symbol is exported, as with a build without a version script. */
+PINOCCHIO_0.0 {
+    global: *;
+};

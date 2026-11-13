@@ -56,6 +56,6 @@ clean:
 distclean cleanall: clean
 	$(RM) *~ .depend core *.out *.bak *.o
 
-include .depend
+-include .depend
 
 .PHONY: all depend clean distclean cleanall
