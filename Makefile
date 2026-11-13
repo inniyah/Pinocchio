@@ -38,4 +38,9 @@ bcpp:
 test:all
 	LD_LIBRARY_PATH=Pinocchio DemoUI/DemoUI DemoUI/data/test.obj -motion DemoUI/data/walk.txt -algo DQS
 
-.PHONY: all depend clean distclean cleanall bcpp test
+# Regression tests for the bug fixes (no display needed)
+check:
+	$(MAKE) -C Pinocchio libpinocchio.a
+	$(MAKE) -C tests check
+
+.PHONY: all depend clean distclean cleanall bcpp test check
