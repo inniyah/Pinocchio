@@ -25,6 +25,7 @@
 #include "utils.h"
 #include "debugging.h"
 #include <fstream>
+#include <stdexcept>
 #include <unordered_map>
 
 namespace Pinocchio {
@@ -34,7 +35,9 @@ namespace Pinocchio {
         fcFractionV.resize(fPrevV.size(), -1.);
 
         for (int i = 0; i < (int)fPrevV.size(); ++i) {
-            if(fGraphV.edges[i].size() == 2) {
+            // The root is always kept: with exactly 2 children it used to be left
+            // out of the compressed skeleton, breaking everything else.
+            if(i > 0 && fGraphV.edges[i].size() == 2) {
                 continue;
             }
             fcMapV[i] = cfMapV.size();
@@ -118,7 +121,12 @@ namespace Pinocchio {
             fPrevV.push_back(-1);
         }                                                   // Add a bone
         else {
-            int prev = jointNames[previous];
+            // jointNames[previous] used to create a 0 entry for an unknown name:
+            // the joint was silently attached to the root.
+            std::map<std::string, int>::const_iterator found = jointNames.find(previous);
+            if(found == jointNames.end())
+                throw std::runtime_error("Skeleton: unknown parent '" + previous + "' for '" + name + "'");
+            int prev = found->second;
             fGraphV.edges[cur].push_back(prev);
             fGraphV.edges[prev].push_back(cur);
             fPrevV.push_back(prev);
@@ -126,6 +134,9 @@ namespace Pinocchio {
     }
 
     void Skeleton::makeSymmetric(const std::string &name1, const std::string &name2) {
+        if(!jointNames.count(name1) || !jointNames.count(name2))
+            throw std::runtime_error("Skeleton::makeSymmetric: unknown joint '" +
+                                     (jointNames.count(name1) ? name2 : name1) + "'");
         int i1 = jointNames[name1];
         int i2 = jointNames[name2];
 
@@ -136,13 +147,21 @@ namespace Pinocchio {
     }
 
     void Skeleton::setFoot(const std::string &name) {
-        int i = jointNames[name];
-        cFeetV[fcMapV[i]] = true;
+        std::map<std::string, int>::const_iterator it = jointNames.find(name);
+        if(it == jointNames.end())
+            throw std::runtime_error("Skeleton::setFoot: unknown joint '" + name + "'");
+        if(fcMapV[it->second] < 0)   // used to write cFeetV[-1]
+            throw std::runtime_error("Skeleton::setFoot: '" + name + "' is a mid-chain joint (degree 2); mark the end of the chain");
+        cFeetV[fcMapV[it->second]] = true;
     }
 
     void Skeleton::setFat(const std::string &name) {
-        int i = jointNames[name];
-        cFatV[fcMapV[i]] = true;
+        std::map<std::string, int>::const_iterator it = jointNames.find(name);
+        if(it == jointNames.end())
+            throw std::runtime_error("Skeleton::setFat: unknown joint '" + name + "'");
+        if(fcMapV[it->second] < 0)   // used to write cFatV[-1]
+            throw std::runtime_error("Skeleton::setFat: '" + name + "' is a mid-chain joint (degree 2); only end and branch joints");
+        cFatV[fcMapV[it->second]] = true;
     }
 
     //-----------------actual skeletons-------------------
@@ -524,21 +543,29 @@ namespace Pinocchio {
     FileSkeleton::FileSkeleton(const std::string &filename) {
         std::ifstream strm(filename.c_str());
 
-        if (!strm.is_open()) {
-            Debugging::out() << "Error opening file " << filename << std::endl;
-            return;
-        }
+        // A missing file used to give an empty skeleton that failed later on,
+        // and malformed lines were silently skipped.
+        if (!strm.is_open())
+            throw std::runtime_error("Cannot open skeleton file " + filename);
 
+        int lineNum = 0;
         while (!strm.eof()) {
             std::vector<std::string> line = readWords(strm);
-            if (line.size() < 5) {                          // Error
+            ++lineNum;
+            if (line.empty() || line[0][0] == '#') {
                 continue;
+            }
+            if (line.size() < 5) {
+                throw std::runtime_error(filename + ": line " + std::to_string(lineNum) +
+                                         ": expected 'name x y z parent'");
             }
 
             Vector3 p;
-            sscanf(line[1].c_str(), "%lf", &(p[0]));
-            sscanf(line[2].c_str(), "%lf", &(p[1]));
-            sscanf(line[3].c_str(), "%lf", &(p[2]));
+            for (int k = 0; k < 3; ++k) {
+                if (sscanf(line[k + 1].c_str(), "%lf", &(p[k])) != 1)
+                    throw std::runtime_error(filename + ": line " + std::to_string(lineNum) +
+                                             ": invalid coordinate '" + line[k + 1] + "'");
+            }
 
             if (line[4] == "-1") {
                 line[4] = std::string();
