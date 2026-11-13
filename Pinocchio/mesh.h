@@ -37,7 +37,7 @@ namespace Pinocchio {
     };
 
     struct MeshEdge {
-        MeshEdge() : vertex(-1), prev(-1), twin(-1) {}
+        MeshEdge() : vertex(-1), tvertex(-1), prev(-1), twin(-1) {}
 
         int vertex;                                         // The vertex the edge points to--the start vertex is prev->vertex
         int tvertex;
@@ -47,7 +47,7 @@ namespace Pinocchio {
 
     class PINOCCHIO_API Mesh {
         public:
-            Mesh() : scale(1.) {}
+            Mesh() : scale(1.), withTexture(false), blendWeight(1.f) {}
             Mesh(const std::string &file, float weight=1.);
 
             bool integrityCheck() const;

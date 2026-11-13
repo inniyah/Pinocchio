@@ -166,37 +166,36 @@ namespace Pinocchio {
 
     void Mesh::fixDupFaces() {
         int i;
-        std::map<MFace, int> faces;
-        for(i = 0; i < (int)edges.size(); i += 3) {
-            MFace current(edges[i].vertex, edges[i + 1].vertex, edges[i + 2].vertex);
-
-            if(faces.count(current)) {
-                int oth = faces[current];
-                if(oth == -1) {
-                    faces[current] = i;
-                    continue;
-                }
-                faces[current] = -1;
-                int newOth = edges.size() - 6;
-                int newCur = edges.size() - 3;
-
-                edges[oth] = edges[newOth];
-                edges[oth + 1] = edges[newOth + 1];
-                edges[oth + 2] = edges[newOth + 2];
-                edges[i] = edges[newCur];
-                edges[i + 1] = edges[newCur + 1];
-                edges[i + 2] = edges[newCur + 2];
-
-                MFace newOthF(edges[newOth].vertex, edges[newOth + 1].vertex, edges[newOth + 2].vertex);
-                faces[newOthF] = newOth;
-
-                edges.resize(edges.size() - 6);
-                i -= 3;
+        // Rewritten: the original moved the last two faces into the gaps and
+        // stored the old (already removed) index of one of them in the map; if a
+        // duplicate face was among the last 6 edges, the mesh got corrupted.
+        // Now degenerate faces are dropped, and for every pair of faces with the
+        // same vertices both are dropped (they are usually internal "fins"),
+        // keeping the order of the remaining faces.
+        int nf = (int)edges.size() / 3;
+        std::vector<bool> keep(nf, true);
+        std::map<MFace, std::vector<int> > groups;
+        for(i = 0; i < nf; ++i) {
+            int a = edges[3 * i].vertex, b = edges[3 * i + 1].vertex, c = edges[3 * i + 2].vertex;
+            if(a == b || b == c || a == c) {
+                keep[i] = false;
+                continue;
             }
-            else {
-                faces[current] = i;
+            groups[MFace(a, b, c)].push_back(i);
+        }
+        for(std::map<MFace, std::vector<int> >::const_iterator it = groups.begin(); it != groups.end(); ++it) {
+            const std::vector<int> &g = it->second;
+            for(int k = 0; k + 1 < (int)g.size(); k += 2) {
+                keep[g[k]] = false;
+                keep[g[k + 1]] = false;
             }
         }
+        std::vector<MeshEdge> kept;
+        kept.reserve(edges.size());
+        for(i = 0; i < nf; ++i)
+            if(keep[i])
+                kept.insert(kept.end(), edges.begin() + 3 * i, edges.begin() + 3 * i + 3);
+        edges.swap(kept);
 
         //scan for unreferenced vertices and get rid of them
         std::set<int> referencedVerts;
@@ -219,15 +218,20 @@ namespace Pinocchio {
             edges[i].vertex = newIdxs[edges[i].vertex];
         }
         for(i = 0; i < (int)vertices.size(); ++i) {
-            if(newIdxs[i] > 0)
+            if(newIdxs[i] >= 0)   // used to be "> 0": the first used vertex was not moved if vertex 0 was unused
                 vertices[newIdxs[i]] = vertices[i];
         }
         vertices.resize(referencedVerts.size());
     }
 
     void Mesh::readObj(std::istream &strm) {
-        int i;
         int lineNum = 0;
+        // Texture coordinates read so far; they are assigned to vertices from the
+        // faces (each "vt" used to be assigned to the last "v" read, which is
+        // unrelated, and a "vt" before the first "v" called vertices.back() on an
+        // empty vector: undefined behavior).
+        std::vector<Vector3> texcoords;
+        std::vector<bool> hasTexture;
         while (!strm.eof()) {
             ++lineNum;
 
@@ -241,11 +245,15 @@ namespace Pinocchio {
 
             //deal with the line based on the first word
             if (words[0] == "vt") {                         // texture coordinates
-                double tx, ty;
+                if (words.size() < 3) {
+                    Debugging::out() << "Error on line " << lineNum << std::endl;
+                    OUT;
+                }
+                double tx = 0., ty = 0.;
                 withTexture = true;
                 sscanf(words[1].c_str(), "%lf", &tx);
                 sscanf(words[2].c_str(), "%lf", &ty);
-                vertices.back().texture = Vector3(tx, ty, 0.0);
+                texcoords.push_back(Vector3(tx, ty, 0.0));
 
             }                                               // vertex normal
             else if (words[0] == "vn") {
@@ -261,7 +269,7 @@ namespace Pinocchio {
 
             }                                               // geometric vertices
             else if(words[0][0] == 'v' && words[0].size() == 1) {
-                if (words.size() != 4) {
+                if (words.size() < 4) {   // used to be "!= 4", rejecting valid "v x y z w" and "v x y z r g b" lines
                     Debugging::out() << "Error on line " << lineNum << std::endl;
                     OUT;
                 }
@@ -280,20 +288,40 @@ namespace Pinocchio {
             }
 
             if (words[0][0] == 'f') {                       // polygonal face element
-                if (words.size() < 4 || words.size() > 15) {
+                // Used to allow at most 14 vertices per face (fixed arrays of 16),
+                // no negative indices, and left the texture index uninitialized
+                // for faces like "f 1 2 3" or "f 1//1 2//2 3//3".
+                if (words.size() < 4) {
                     Debugging::out() << "Error on line " << lineNum << std::endl;
                     OUT;
                 }
 
-                int a[16];
-                int t[16];
-                for(i = 0; i < (int)words.size() - 1; ++i) {
-                    sscanf(words[i + 1].c_str(), "%d/%d", a + i, t + i);
+                int nc = (int)words.size() - 1;
+                std::vector<int> a(nc, 0), t(nc, 0);
+                for(int i = 0; i < nc; ++i) {
+                    const char *w = words[i + 1].c_str();
+                    int n;
+                    if(sscanf(w, "%d//%d", &a[i], &n) == 2) {}
+                    else if(sscanf(w, "%d/%d", &a[i], &t[i]) >= 1) {}
+                    else {
+                        Debugging::out() << "Unreadable vertex on line " << lineNum << std::endl;
+                        OUT;
+                    }
+                    // relative indices: -1 is the last one read so far
+                    if(a[i] < 0) a[i] += (int)vertices.size() + 1;
+                    if(t[i] < 0) t[i] += (int)texcoords.size() + 1;
+                    int v = a[i] - 1, ti = t[i] - 1;
+                    if(v >= 0 && v < (int)vertices.size() && ti >= 0 && ti < (int)texcoords.size()) {
+                        if((int)hasTexture.size() < (int)vertices.size())
+                            hasTexture.resize(vertices.size(), false);
+                        if(!hasTexture[v]) {                // the first face using it wins
+                            vertices[v].texture = texcoords[ti];
+                            hasTexture[v] = true;
+                        }
+                    }
                 }
 
-                //swap(a[1], a[2]); //TODO:remove
-
-                for(int j = 2; j < (int)words.size() - 1; ++j) {
+                for(int j = 2; j < nc; ++j) {
                     int first = edges.size();
                     edges.resize(edges.size() + 3);
                     edges[first].vertex = a[0] - 1;
@@ -429,22 +457,28 @@ namespace Pinocchio {
                 continue;
             }
 
-            //otherwise it's a face
-            if(words.size() != 4) {
-                Debugging::out() << "Error on line " << lineNum << std::endl;
-                OUT;
-            }
-
-            int a[3];
-            for(i = 0; i < 3; ++i) {
-                sscanf(words[i + 1].c_str(), "%d", a + i);
-            }
-
-            int first = edges.size();
-            edges.resize(edges.size() + 3);
-            for(i = 0; i < 3; ++i) {
-                //indices in file are 0-based
-                edges[first + i].vertex = a[i];
+            //otherwise it's a face: "n v1 v2 ... vn" (0-based indices)
+            // Only triangles used to be accepted, and n was ignored.
+            {
+                int nc = 0;
+                if(sscanf(words[0].c_str(), "%d", &nc) != 1 || nc < 3 || (int)words.size() < nc + 1) {
+                    Debugging::out() << "Error on line " << lineNum << std::endl;
+                    OUT;
+                }
+                std::vector<int> a(nc, -1);
+                for(i = 0; i < nc; ++i) {
+                    if(sscanf(words[i + 1].c_str(), "%d", &a[i]) != 1) {
+                        Debugging::out() << "Error on line " << lineNum << std::endl;
+                        OUT;
+                    }
+                }
+                for(int j = 2; j < nc; ++j) {
+                    int first = edges.size();
+                    edges.resize(edges.size() + 3);
+                    edges[first].vertex = a[0];
+                    edges[first + 1].vertex = a[j - 1];
+                    edges[first + 2].vertex = a[j];
+                }
             }
 
             //otherwise continue -- unrecognized line
@@ -496,21 +530,28 @@ namespace Pinocchio {
                 continue;
             }
 
-            //otherwise it's a face
-            if(words.size() != 4) {
-                Debugging::out() << "Error on line " << lineNum << std::endl;
-                OUT;
-            }
-
-            int a[3];
-            for(i = 0; i < 3; ++i) {
-                sscanf(words[i + 1].c_str(), "%d", a + i);
-            }
-
-            int first = edges.size();
-            edges.resize(edges.size() + 3);
-            for(i = 0; i < 3; ++i) {
-                edges[first + i].vertex = a[i];             //indices in file are 0-based
+            //otherwise it's a face: "n v1 v2 ... vn" (0-based indices)
+            // Only triangles used to be accepted, and n was ignored.
+            {
+                int nc = 0;
+                if(sscanf(words[0].c_str(), "%d", &nc) != 1 || nc < 3 || (int)words.size() < nc + 1) {
+                    Debugging::out() << "Error on line " << lineNum << std::endl;
+                    OUT;
+                }
+                std::vector<int> a(nc, -1);
+                for(i = 0; i < nc; ++i) {
+                    if(sscanf(words[i + 1].c_str(), "%d", &a[i]) != 1) {
+                        Debugging::out() << "Error on line " << lineNum << std::endl;
+                        OUT;
+                    }
+                }
+                for(int j = 2; j < nc; ++j) {
+                    int first = edges.size();
+                    edges.resize(edges.size() + 3);
+                    edges[first].vertex = a[0];
+                    edges[first + 1].vertex = a[j - 1];
+                    edges[first + 2].vertex = a[j];
+                }
             }
 
             //otherwise continue -- unrecognized line
@@ -585,8 +626,13 @@ namespace Pinocchio {
 
             int a[3];
             for(i = 0; i < 3; ++i) {
+                a[i] = 0;
                 sscanf(words[i].c_str(), "%d", a + i);
                 --(a[i]);                                   //indices in file are 1-based
+                if(a[i] < 0 || a[i] >= (int)fedges.size()) {   // used to index out of range
+                    Debugging::out() << "Error (bad edge index) on line " << lineNum << std::endl;
+                    OUT;
+                }
             }
 
             int first = edges.size();
@@ -663,7 +709,11 @@ namespace Pinocchio {
                 continue;
 
             if(words[0] == std::string("vertex")) {
-                double x, y, z;
+                if(words.size() < 4) {
+                    Debugging::out() << "Error on line " << lineNum << std::endl;
+                    OUT;
+                }
+                double x = 0., y = 0., z = 0.;
                 sscanf(words[1].c_str(), "%lf", &x);
                 sscanf(words[2].c_str(), "%lf", &y);
                 sscanf(words[3].c_str(), "%lf", &z);
@@ -687,6 +737,10 @@ namespace Pinocchio {
             }
 
             if(words[0] == std::string("endfacet")) {
+                if(lastIdxs.size() < 3) {                   // used to read out of range
+                    Debugging::out() << "Error: facet with fewer than 3 vertices on line " << lineNum << std::endl;
+                    OUT;
+                }
                 if(lastIdxs[0] == lastIdxs[1] || lastIdxs[1] == lastIdxs[2] || lastIdxs[0] == lastIdxs[2]) {
                     Debugging::out() << "Duplicate vertex in triangle" << std::endl;
                     continue;
