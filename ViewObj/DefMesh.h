@@ -33,9 +33,10 @@ class Motion;
 class DefMesh : public DisplayMesh {
     public:
         DefMesh(const Pinocchio::Mesh inMesh, const Pinocchio::Skeleton &inOrigSkel, const std::vector<Vector3> &inMatch,
-            const Pinocchio::Attachment &inAttachment, Motion *inMotion = NULL)
+            const Pinocchio::Attachment &inAttachment, Motion *inMotion = NULL,
+            Pinocchio::AlgoType algo = Pinocchio::LBS)
             : origSkel(inOrigSkel), match(inMatch), attachment(inAttachment),
-            origMesh(inMesh), motion(inMotion), filter(match, origSkel.fPrev())
+            origMesh(inMesh), motion(inMotion), filter(match, origSkel.fPrev()), skinAlgo(algo)
         {
             transforms.resize(origSkel.fPrev().size() - 1);
         }
@@ -69,5 +70,6 @@ class DefMesh : public DisplayMesh {
 
         std::vector<double> footOffsets;
         mutable MotionFilter filter;
+        Pinocchio::AlgoType skinAlgo;   // skinning algorithm (LBS, DQS or MIX)
 };
 #endif // DEFMESH_H_A392C352_465A_11E9_B3CC_871502918F90

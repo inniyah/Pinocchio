@@ -259,7 +259,7 @@ struct SkelCentaur : public Skeleton {
 
 void AnimatedModel::loadObject(std::string obj_filename, std::string motion_filenamename) {
     // Calculate Skeleton and Attachment Values with Pinocchio
-    Mesh m(obj_filename, Mesh::DQS);
+    Mesh m(obj_filename);
     Quaternion<> meshTransform;
     double skelScale = 1.;
     double stiffness = 1.;
@@ -294,7 +294,7 @@ void AnimatedModel::loadObject(std::string obj_filename, std::string motion_file
     assert (o.embedding.size() != 0);
 
     if(motion_filenamename.size() > 0) {
-        addMesh(new DefMesh(m, given, o.embedding, *(o.attachment), new Motion(motion_filenamename)));
+        addMesh(new DefMesh(m, given, o.embedding, *(o.attachment), new Motion(motion_filenamename), Pinocchio::DQS));
     } else {
         addMesh(new StaticDisplayMesh(m));
         for(int i = 1; i < (int)o.embedding.size(); ++i) {

@@ -137,7 +137,7 @@ void DefMesh::updateMesh(int &framenum) const {
 
         filter.step(t, feet);
         if(reallyDeform)
-            curMesh = attachment.deform(origMesh, filter.getTransforms());
+            curMesh = attachment.deform(origMesh, filter.getTransforms(), skinAlgo);
 
 #if 0
         static int period = 1;
@@ -152,7 +152,7 @@ void DefMesh::updateMesh(int &framenum) const {
 #endif
     }
     else
-        curMesh = attachment.deform(origMesh, t);
+        curMesh = attachment.deform(origMesh, t, skinAlgo);
 }
 
 
