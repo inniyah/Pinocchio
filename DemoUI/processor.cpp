@@ -64,7 +64,7 @@ void printUsageAndExit() {
   std::cout << "              [-motion motionname] [-nofit]" << std::endl;
   std::cout << "              [-algo skinning_algorithm [blend_weight]]" << std::endl;
 
-  exit(0);
+  exit(1);   // called on invalid arguments: used to exit with 0 (success)
 }
 
 
@@ -134,6 +134,10 @@ ArgData processArgs(const std::vector<std::string> &args) {
     } else if (curStr == std::string("-algo")) {
       /*  Option to use a different skinning algorithm than the
        *  default LBS. Currently, options are LBS, DQS, and MIX */
+      if(cur >= num) {   // used to read past the end of args
+        std::cout << "No skinning algorithm given; exiting." << std::endl;
+        printUsageAndExit();
+      }
       std::string algo = args[cur++];
       if (algo == std::string("LBS")) {
         out.skinAlgorithm = Pinocchio::LBS;
@@ -142,13 +146,19 @@ ArgData processArgs(const std::vector<std::string> &args) {
       } else if (algo == std::string("MIX")) {
         /*  Grab the desired blending weight for LBS, i.e
          *  how much of the result of LBS you want to see */
-        if(cur >= num) {
-          std::cout << "No blending weight given; exiting." << std::endl;
-          std::cout << args[cur] << std::endl;
-          printUsageAndExit();
-        }
+        // The weight is optional (0.5 by default, as the README says); it used
+        // to be mandatory, and when missing args[cur] was read out of range.
         out.skinAlgorithm = Pinocchio::MIX;
-        sscanf(args[cur++].c_str(), "%f", &out.blendWeight);
+        float bw;
+        char extra;
+        if(cur < num && sscanf(args[cur].c_str(), "%f%c", &bw, &extra) == 1) {
+          if(bw < 0.f || bw > 1.f) {
+            std::cout << "Blending weight must be in [0, 1]; exiting." << std::endl;
+            printUsageAndExit();
+          }
+          out.blendWeight = bw;
+          ++cur;
+        }
       } else {
         std::cout << "Unrecognized skinning algorithm" << std::endl;
         printUsageAndExit();
@@ -172,8 +182,7 @@ void process(const std::vector<std::string> &args, MyWindow *w) {
   Mesh m(a.filename, a.blendWeight);
   if(m.vertices.size() == 0) {
     std::cout << "Error reading file.  Aborting." << std::endl;
-    exit(0);
-    return;
+    exit(1);
   }
 
   for(i = 0; i < (int)m.vertices.size(); ++i) {
@@ -184,6 +193,12 @@ void process(const std::vector<std::string> &args, MyWindow *w) {
 
   Skeleton given = a.skeleton;
   given.scale(a.skelScale * 0.7);
+
+  // The -nofit path does not go through prepareMesh: an open mesh hung the weight computation.
+  if (!a.stopAtMesh && !m.integrityCheck()) {
+    std::cout << "Mesh must be closed, manifold and consistently oriented.  Aborting." << std::endl;
+    exit(1);
+  }
 
   if (a.stopAtMesh) { //if early bailout
     w->addMesh(new StaticDisplayMesh(m));
@@ -210,7 +225,7 @@ void process(const std::vector<std::string> &args, MyWindow *w) {
 
   if(o.embedding.size() == 0) {
     std::cout << "Error embedding" << std::endl;
-    exit(0);
+    exit(1);
   }
 
   if(a.motionname.size() > 0) {

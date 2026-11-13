@@ -43,8 +43,9 @@ void printUsageAndExit()
   cout << "              [-meshonly | -mo] [-circlesonly | -co]" << endl;
   cout << "              [-fit] [-stiffness s]" << endl;
   cout << "              [-skelOut skelOutFile] [-weightOut weightOutFile]" << endl;
+  cout << "Without -fit, the skeleton (-skel file) must already be placed inside the mesh." << endl;
 
-  exit(0);
+  exit(1);   // called on invalid arguments: used to exit with 0 (success)
 }
 
 
@@ -123,6 +124,11 @@ ArgData processArgs(const vector<string> &args)
       out.noFit = false;
       continue;
     }
+    if(curStr == string("-nofit"))
+    {
+      out.noFit = true;
+      continue;
+    }
     if(curStr == string("-stiffness"))
     {
       if(cur >= num)
@@ -174,8 +180,7 @@ void process(const vector<string> &args)
   if(m.vertices.size() == 0)
   {
     cout << "Error reading file.  Aborting." << endl;
-    exit(0);
-    return;
+    exit(1);   // used to be exit(0): the error was reported as success
   }
 
   for(i = 0; i < (int)m.vertices.size(); ++i)
@@ -185,6 +190,14 @@ void process(const vector<string> &args)
 
   Skeleton given = a.skeleton;
   given.scale(a.skelScale * 0.7);
+
+  // The no-fit path does not go through prepareMesh: without this check an
+  // open mesh hung the weight computation (infinite loop walking vertex rings).
+  if(!m.integrityCheck())
+  {
+    cout << "Mesh must be closed, manifold and consistently oriented.  Aborting." << endl;
+    exit(1);
+  }
 
   //if early bailout
   if(a.stopAtMesh)
@@ -217,7 +230,7 @@ void process(const vector<string> &args)
   if(o.embedding.size() == 0)
   {
     cout << "Error embedding" << endl;
-    exit(0);
+    exit(1);
   }
 
   //output skeleton embedding
@@ -253,7 +266,15 @@ int main(int argc, char **argv)
   vector<string> args;
   for(int i = 0; i < argc; ++i)
     args.push_back(argv[i]);
-  process(args);
+  try
+  {
+    process(args);
+  }
+  catch(const std::exception &e)   // e.g. errors reading the skeleton file
+  {
+    cerr << "Error: " << e.what() << endl;
+    return 1;
+  }
 
   return 0;
 }
