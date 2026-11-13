@@ -315,9 +315,12 @@ namespace Pinocchio {
             }
             //not positive definite
             if(out.diag[i] <= 0.) {
-                assert(false && "Not positive definite matrix (or ill-conditioned)");
+                // Used to assert (aborting debug builds) and otherwise return an
+                // empty matrix that made solve() produce garbage. Report the
+                // failure to the caller with NULL instead.
+                Debugging::out() << "Not positive definite matrix (or ill-conditioned)" << std::endl;
                 delete outP;
-                return new MyLLTMatrix();
+                return NULL;
             }
             out.diag[i] = sqrt(out.diag[i]);
             dinv[i] = 1. / out.diag[i];

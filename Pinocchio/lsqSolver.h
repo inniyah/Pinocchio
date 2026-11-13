@@ -351,7 +351,7 @@ namespace Pinocchio {
                 }
 
                 factoredMatrix = spdMatrix.factor();
-                if (factoredMatrix->size() != softVars) {
+                if (!factoredMatrix || factoredMatrix->size() != softVars) {
                     return false;
                 }
 

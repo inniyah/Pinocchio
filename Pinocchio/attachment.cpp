@@ -21,6 +21,7 @@
 #include "attachment.h"
 #include "vecutils.h"
 #include "lsqSolver.h"
+#include "debugging.h"
 
 namespace Pinocchio {
 
@@ -176,8 +177,18 @@ namespace Pinocchio {
                 nzweights.resize(nv);
                 SPDMatrix Am(A);
                 LLTMatrix *Ainv = Am.factor();
-                if(Ainv == NULL)
+                if(Ainv == NULL) {
+                    // It used to return with every weight at 0 (the mesh collapsed
+                    // to the origin when deformed). Bind each vertex to its closest
+                    // bone instead: crude, but usable.
+                    Debugging::out() << "Warning: heat equation could not be solved; "
+                                        "binding each vertex to its closest bone" << std::endl;
+                    for(i = 0; i < nv; ++i) {
+                        nzweights[i].assign(1, std::make_pair(closest[i], 1.));
+                        weights[i][closest[i]] = 1.;
+                    }
                     return;
+                }
 
                 for(j = 0; j < bones; ++j) {
                     std::vector<double> rhs(nv, 0.);
@@ -198,6 +209,10 @@ namespace Pinocchio {
                 }
 
                 for(i = 0; i < nv; ++i) {
+                    // Vertex with no visible bone: it used to keep all-zero weights
+                    // (and collapse to the origin under LBS). Bind it to its closest bone.
+                    if(nzweights[i].empty())
+                        nzweights[i].push_back(std::make_pair(closest[i], 1.));
                     double sum = 0.;
                     for(j = 0; j < (int)nzweights[i].size(); ++j)
                         sum += nzweights[i][j].second;
@@ -267,8 +282,11 @@ namespace Pinocchio {
                         q0 = dquat.rotation();
                     }
                     // init first transform for linear blend
-                    newPos += ((transforms[nzweights[i][0].first] *
-                        out.vertices[i].pos) * nzweights[i][0].second);
+                    if (nbones > 0)
+                        newPos += ((transforms[nzweights[i][0].first] *
+                            out.vertices[i].pos) * nzweights[i][0].second);
+                    else
+                        newPos = out.vertices[i].pos;
 
                     for(j = 1; j < nbones; ++j) {
                         float w = nzweights[i][j].second;
@@ -288,7 +306,16 @@ namespace Pinocchio {
 
                     // Transform the vertex
                     Vector3 dqpos = out.vertices[i].pos;
-                    dqpos = transformPoint(out.vertices[i].pos, dquat_blend);
+                    // getQuatFromMat drops the scale of the Transform, so it is applied
+                    // separately: weight-blended scale on the point before the rigid
+                    // transform (exact when all bones share the same scale; the scale
+                    // used to be silently ignored).
+                    double sBlend = 0.;
+                    for(j = 0; j < nbones; ++j)
+                        sBlend += nzweights[i][j].second * transforms[nzweights[i][j].first].getScale();
+                    if(nbones == 0)
+                        sBlend = 1.;
+                    dqpos = transformPoint(out.vertices[i].pos * sBlend, dquat_blend);
                     out.vertices[i].pos = dqpos;
                     out.vertices[i].pos = newPos *
                         out.blendWeight + dqpos * (1.0 - out.blendWeight);
@@ -376,8 +403,17 @@ namespace Pinocchio {
                         dquat_blend = dquat_blend + dq * w;
                     }
 
+                    // getQuatFromMat drops the scale of the Transform, so it is applied
+                    // separately: weight-blended scale on the point before the rigid
+                    // transform (exact when all bones share the same scale; the scale
+                    // used to be silently ignored).
+                    double sBlend = 0.;
+                    for(j = 0; j < nbones; ++j)
+                        sBlend += nzweights[i][j].second * transforms[nzweights[i][j].first].getScale();
+                    if(nbones == 0)
+                        sBlend = 1.;
                     // Transform the vertex
-                    out.vertices[i].pos = transformPoint(out.vertices[i].pos,
+                    out.vertices[i].pos = transformPoint(out.vertices[i].pos * sBlend,
                         dquat_blend);
                 }
                 return out;
